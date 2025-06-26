@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Attempt Details</title>
+  <style>
+    .explanation-card { /* You might rename or restyle this */
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+    }
+    .options-display p {
+        margin: 5px 0 5px 20px; /* Indent options */
+    }
+    .correct-text { color: green; font-weight: bold; }
+    .incorrect-text { color: red; font-weight: bold; }
+    .correct-answer-text { color: darkgreen; font-weight: bold; } /* For the actual correct answer */
+    .explanation h5 { margin-bottom: 5px; }
+    .explanation div { font-size: 0.9em; }
+
+    /* Optional: Styling for highlighting selected/correct MCQ options */
+    .student-correct-option { background-color: #e6ffe6; } /* Light green for student's correct MCQ choice */
+    .student-incorrect-option { background-color: #ffe6e6; } /* Light red for student's incorrect MCQ choice */
+    .actual-correct-option { border-left: 3px solid green; padding-left: 5px; } /* To mark the actual correct MCQ option if student was wrong */
+
+  </style>
+</head>
+<body>
+  <h2>🧠 Your Attempt Details</h2>
+  <div id="output">Loading...</div>
+
+  <script>
+    fetch(`/api/explanations/{{ attempt_id }}`)
+      .then(res => res.json())
+      .then(data => {
+        const out = document.getElementById('output');
+        out.innerHTML = ''; // Clear "Loading..."
+
+        if (data.error) {
+            out.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+            return;
+        }
+
+        if (data.questions && data.questions.length > 0) {
+          data.questions.forEach(item => {
+            let questionHtml = `<div class="explanation-card">`; // Using existing class, can be renamed
+            questionHtml += `<h4>${item.question_text}</h4>`;
+            questionHtml += `<p><small>Topic: ${item.topic || 'N/A'} | Type: ${item.question_type ? item.question_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}</small></p>`;
+
+            // Display MCQ options if available
+            if (item.question_type === 'mcq' && item.options) {
+                questionHtml += `<div class="options-display">`;
+                for (const key in item.options) { // key will be 'A', 'B', 'C', 'D'
+                    let optionClass = '';
+                    let optionText = `${key}) ${item.options[key]}`;
+
+                    // Highlight student's MCQ choice
+                    // This assumes item.student_answer_text for MCQ is the *text* of the option they chose
+                    // And item.correct_answer_text is the *text* of the correct option
+                    if (item.options[key] === item.student_answer_text) {
+                        optionClass = item.is_correct ? 'student-correct-option correct-text' : 'student-incorrect-option incorrect-text';
+                    } 
+                    // Highlight the actual correct MCQ option if the student was wrong and this is it
+                    else if (item.options[key] === item.correct_answer_text && !item.is_correct) { 
+                        optionClass = 'actual-correct-option';
+                    }
+                    questionHtml += `<p class="${optionClass}">${optionText}</p>`;
+                }
+                questionHtml += `</div>`;
+            }
+
+            // Display student's answer (applies to all types)
+            questionHtml += `<p><strong>Your Answer:</strong> <span class="${item.is_correct ? 'correct-text' : 'incorrect-text'}">${item.student_answer_text !== null && item.student_answer_text !== undefined ? item.student_answer_text : 'Not Answered'}</span></p>`;
+
+            // Display correct answer if student was wrong
+            if (!item.is_correct) {
+                questionHtml += `<p><strong>Correct Answer:</strong> <span class="correct-answer-text">${item.correct_answer_text !== null && item.correct_answer_text !== undefined ? item.correct_answer_text : 'N/A'}</span></p>`;
+            }
+
+            questionHtml += `<div class="explanation"><h5>Explanation:</h5><div>${item.explanation || 'No explanation available.'}</div></div>`;
+            questionHtml += `</div>`; // Closing explanation-card
+            
+            out.innerHTML += questionHtml;
+          });
+        } else {
+          out.innerHTML = "<p>✅ No questions found for this attempt, or you got everything correct and no specific explanations were generated for correct answers!</p>";
+          if(data.message) {
+            out.innerHTML += `<p><small>${data.message}</small></p>`;
+          }
+        }
+      })
+      .catch(error => {
+        const out = document.getElementById('output');
+        out.innerHTML = `<p style="color: red;">Failed to load attempt details. ${error}</p>`;
+        console.error("Error fetching attempt details:", error);
+      });
+  </script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+-- SQL to create tables for password reset tokens and OTP codes
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS otp_codes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    otp_code VARCHAR(10) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+ALTER TABLE questions ADD COLUMN question_type VARCHAR(50) DEFAULT 'mcq';
+
+
+ALTER TABLE questions
+MODIFY COLUMN option_a VARCHAR(255) NULL,
+MODIFY COLUMN option_b VARCHAR(255) NULL,
+MODIFY COLUMN option_c VARCHAR(255) NULL,
+MODIFY COLUMN option_d VARCHAR(255) NULL;
+
+ALTER TABLE questions
+MODIFY COLUMN correct_option VARCHAR(255) NULL;

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Eye Control Interface | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* ... (your existing styles from the file) ... */
+        .control-container { text-align: center; padding: 30px; }
+        .control-container .btn { margin: 10px; padding: 15px 30px; font-size: 1.2em; }
+        .status { margin-top: 20px; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container control-container">
+        <h2>Eye Mouse Control</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages-container" style="position: static; transform: none; width: 100%; margin-bottom: 20px;">
+              {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}" role="alert">
+                  <span>{{ message }}</span>
+                  <button type="button" class="flash-close-btn" onclick="this.parentElement.style.display='none';">&times;</button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {# Use the variable passed from the route #}
+        {% if is_running %} 
+            <p class="status">Eye control is currently: <strong>ACTIVE</strong></p>
+            <p><small>An OpenCV window titled "Eye Controlled Mouse (Flask Server)" should be active. Press 'q' in that window to stop the tracking.</small></p>
+            <a href="{{ url_for('stop_eye_control') }}" class="btn" style="background-color: var(--accent-color);">Stop Eye Control (Update UI)</a>
+        {% else %}
+            <p class="status">Eye control is currently: <strong>INACTIVE</strong></p>
+            <a href="{{ url_for('start_eye_control') }}" class="btn" style="background-color: var(--secondary-color);">Start Eye Control</a>
+        {% endif %}
+        <hr style="margin: 30px 0;">
+        <p><small>Note: This feature attempts to control your system mouse using your webcam via a separate Python script. Ensure your webcam is available and necessary libraries (OpenCV, dlib, pyautogui) are installed in your Flask environment.</small></p>
+        <p><a href="{{ url_for('dashboard') }}">Back to Dashboard</a></p>
+    </div>
+</body>
+</html>

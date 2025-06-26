@@ -1,0 +1,158 @@
+<!--complete_teacher_profile.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Complete Teacher Profile | STS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='complete_profile.css') }}">
+  <style>
+    .department-checkboxes, .semester-checkboxes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .dropdown-multiselect {
+      position: relative;
+      max-width: 100%;
+    }
+
+    .dropdown-btn {
+      padding: 10px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 4px;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      padding: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+    }
+
+    .dropdown-content label {
+      display: block;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body class="login-container">
+  <div class="card">
+    <h2 class="sts-title">Complete Your Teaching Profile</h2>
+
+    <form method="POST" action="/complete-teacher-profile" class="login-form" id="profile-form">
+      <div class="form-group">
+        <label>🏫 Departments You'll Teach</label><br>
+        <div class="department-checkboxes">
+          {% for dept in available_departments %}
+            <label>
+              <input type="checkbox" name="departments" value="{{ dept }}"
+                {% if user.departments_taught and dept in user.departments_taught.split(',') %}checked{% endif %}>
+              {{ dept }}
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>📘 Semesters You'll Teach</label><br>
+        <div class="semester-checkboxes">
+          {% for sem in available_semesters %}
+            <label>
+              <input type="checkbox" name="semesters" value="{{ sem }}"
+                {% if user.semesters_taught and str(sem) in user.semesters_taught.split(',') %}checked{% endif %}>
+              Semester {{ sem }}
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>📚 Select Subjects You'll Teach</label><br>
+        <div class="dropdown-multiselect" id="subjects-container">
+          <div class="dropdown-btn" onclick="toggleDropdown()">Select Subjects</div>
+          <div class="dropdown-content" id="dropdown-subjects">
+            <em>Please select at least one department and semester</em>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="login-button">💾 Save Teaching Profile</button>
+    </form>
+  </div>
+
+  <script>
+    document.querySelectorAll('input[name="departments"]').forEach(checkbox => {
+      checkbox.addEventListener('change', updateSubjects);
+    });
+
+    document.querySelectorAll('input[name="semesters"]').forEach(checkbox => {
+      checkbox.addEventListener('change', updateSubjects);
+    });
+
+    function toggleDropdown() {
+      const content = document.getElementById('dropdown-subjects');
+      content.style.display = content.style.display === 'block' ? 'none' : 'block';
+    }
+
+    document.addEventListener('click', function(event) {
+      const container = document.getElementById('subjects-container');
+      if (!container.contains(event.target)) {
+        document.getElementById('dropdown-subjects').style.display = 'none';
+      }
+    });
+
+    function updateSubjects() {
+      const selectedDepartments = Array.from(document.querySelectorAll('input[name="departments"]:checked')).map(cb => cb.value);
+      const selectedSemesters = Array.from(document.querySelectorAll('input[name="semesters"]:checked')).map(cb => cb.value);
+
+      const dropdown = document.getElementById('dropdown-subjects');
+
+      if (selectedDepartments.length > 0 && selectedSemesters.length > 0) {
+        fetch(`/get-all-subjects?semesters=${selectedSemesters.join(',')}&departments=${selectedDepartments.join(',')}`)
+          .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+          })
+          .then(data => {
+            if (data.error) {
+              dropdown.innerHTML = `<div class="error-message">Error loading subjects: ${data.error}</div>`;
+              return;
+            }
+
+            let html = '';
+            if (data.subjects && data.subjects.length > 0) {
+              data.subjects.forEach(subject => {
+                html += `
+                  <label>
+                    <input type="checkbox" name="teaching_subjects" value="${subject}">
+                    ${subject}
+                  </label>
+                `;
+              });
+            } else {
+              html = '<em>No subjects found for selected departments and semesters</em>';
+            }
+            dropdown.innerHTML = html;
+          })
+          .catch(error => {
+            dropdown.innerHTML = `<div class="error-message">Error loading subjects. Please try again.</div>`;
+          });
+      } else {
+        dropdown.innerHTML = '<em>Please select at least one department and semester</em>';
+      }
+    }
+  </script>
+</body>
+</html>

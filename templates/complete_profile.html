@@ -1,0 +1,126 @@
+<!--complete_profile.html-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Complete Your Profile | STS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='complete_profile.css') }}">
+</head>
+<body class="login-container">
+  <div class="card">
+    <h2 class="sts-title">Complete Your Profile</h2>
+
+    <form method="POST" action="/complete-profile" class="login-form" id="profile-form">
+      <div class="form-group">
+        <label for="roll">🎓 Roll Number</label>
+        <input type="text" id="roll" name="roll" placeholder="Enter your roll number" 
+               value="{{ user.roll_number if user.roll_number }}" required>
+      </div>
+
+            <div class="form-group">
+        <label for="department">🏫 Department</label>
+        <select id="department" name="department" required>
+          <option value="">--Select Department--</option>
+          {% if all_departments %}
+            {% for dept in all_departments %}
+              <option value="{{ dept }}" {% if user.department == dept %}selected{% endif %}>{{ dept }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="" disabled>No departments available</option>
+          {% endif %}
+        </select>
+      </div>
+
+
+      <div class="form-group">
+        <label for="semester">📘 Semester</label>
+        <select id="semester" name="semester" required>
+          {% for i in range(1, 9) %}
+            <option value="{{ i }}" {% if user.semester and user.semester|string == i|string %}selected{% endif %}>
+              Semester {{ i }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>📚 Select Subjects</label><br>
+        <div id="subjects-container">
+          {% if available_subjects %}
+            <select name="subjects" multiple class="subject-select" id="subjects-select">
+              {% for subject in available_subjects %}
+                <option value="{{ subject }}" 
+                  {% if user.subjects and subject in user.subjects.split(',') %}selected{% endif %}>
+                  {{ subject }}
+                </option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <em>Select department and semester to load subjects...</em>
+          {% endif %}
+        </div>
+        <small class="hint">Hold Ctrl/Cmd to select multiple subjects</small>
+      </div>
+
+      <button type="submit" class="login-button">💾 Save Details</button>
+    </form>
+  </div>
+
+  <script>
+    // Store currently selected subjects
+    let selectedSubjects = [];
+    
+    // Load subjects when page loads (if department/semester already selected)
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get any previously selected subjects
+      const subjectsSelect = document.getElementById("subjects-select");
+      if (subjectsSelect) {
+        selectedSubjects = Array.from(subjectsSelect.selectedOptions)
+          .map(option => option.value);
+      }
+      
+      // Trigger subject loading if department and semester are already selected
+      const semester = document.getElementById("semester").value;
+      const department = document.getElementById("department").value;
+      if (semester && department) {
+        fetchSubjects();
+      }
+    });
+
+    document.getElementById("semester").addEventListener("change", fetchSubjects);
+    document.getElementById("department").addEventListener("change", fetchSubjects);
+
+    function fetchSubjects() {
+      const semester = document.getElementById("semester").value;
+      const department = document.getElementById("department").value;
+      const container = document.getElementById("subjects-container");
+
+      if (!semester || !department) {
+        container.innerHTML = "<em>Select both semester and department.</em>";
+        return;
+      }
+
+      fetch(`/get-subjects?semester=${semester}&department=${department}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            container.innerHTML = `<em>${data.error}</em>`;
+          } else if (data.subjects && data.subjects.length > 0) {
+            let html = `<select name="subjects" multiple class="subject-select" id="subjects-select">`;
+            data.subjects.forEach(subject => {
+              const isSelected = selectedSubjects.includes(subject);
+              html += `<option value="${subject}" ${isSelected ? 'selected' : ''}>${subject}</option>`;
+            });
+            html += `</select>`;
+            container.innerHTML = html;
+          } else {
+            container.innerHTML = "<em>No subjects found for this semester/department.</em>";
+          }
+        })
+        .catch(() => {
+          container.innerHTML = "<em>Error loading subjects.</em>";
+        });
+    }
+  </script>
+</body>
+</html>

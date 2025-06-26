@@ -1,0 +1,29 @@
+<!-- create_test.html -->
+<h2>Create New Test</h2>
+<form method="post">
+  <label>Title:</label>
+  <input type="text" name="title" required><br>
+  <label>Subject:</label>
+  <input type="text" name="subject" required><br>
+  <label>Semester:</label>
+  <input type="text" name="semester" required><br>
+  <div id="question-container">
+    <div>
+      <label>Question:</label><br>
+      <textarea name="questions[]" required></textarea><br>
+      <label>Correct Answer:</label><br>
+      <input type="text" name="answers[]" required><br>
+    </div>
+  </div>
+  <button type="button" onclick="addQuestion()">Add More</button><br>
+  <button type="submit">Create Test</button>
+</form>
+
+<script>
+function addQuestion() {
+  const container = document.getElementById('question-container');
+  const div = document.createElement('div');
+  div.innerHTML = '<label>Question:</label><br><textarea name="questions[]" required></textarea><br><label>Correct Answer:</label><br><input type="text" name="answers[]" required><br>';
+  container.appendChild(div);
+}
+</script>

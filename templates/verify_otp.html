@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify OTP | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> <!-- Your main stylesheet -->
+    <style>
+        /* Basic styling - adapt to your style.css */
+        .container { max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px; background-color: #f9f9f9; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="tel"], input[type="password"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 3px; }
+        button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .error { color: red; margin-bottom: 10px; }
+        .info { color: green; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Verify Your Account</h2>
+        <p>An OTP has been sent to your registered email and phone number.</p>
+        {% if email %}
+            <p><small>Verifying for: {{ email }}</small></p>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="{{ 'error' if category == 'error' else 'info' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('verify_otp') }}">
+            <div class="form-group">
+                <label for="otp">Enter OTP:</label>
+                <input type="text" id="otp" name="otp" required pattern="[0-9]{6}" title="Enter 6-digit OTP">
+            </div>
+            <button type="submit">Verify OTP</button>
+        </form>
+        <br>
+        <p><a href="{{ url_for('signup') }}">Back to Signup (or Resend OTP - not implemented)</a></p>
+    </div>
+</body>
+</html>

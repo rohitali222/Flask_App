@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Eye Tracker | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Include WebGazer.js from a CDN -->
+    <script src="https://webgazer.cs.brown.edu/webgazer.js" type="text/javascript" defer></script>
+    <style>
+        body, html {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrollbars if gaze dot goes to edge */
+            font-family: sans-serif;
+        }
+        #webgazerStatus {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 10000;
+        }
+        #webgazerFaceFeedbackBox { /* Styles for the face feedback box */
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid red;
+            width: 200px; /* Adjust as needed */
+            height: 200px; /* Adjust as needed */
+            z-index: 9998;
+        }
+        #webgazerGazeDot { /* This is the red dot that shows gaze prediction */
+            z-index: 9999; /* Ensure it's on top */
+        }
+        .calibration-instructions {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            z-index: 10001;
+            text-align: center;
+        }
+        .calibration-point {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background-color: red;
+            border-radius: 50%;
+            z-index: 10002;
+            cursor: pointer; /* Indicate it's clickable */
+        }
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+        }
+        .controls button {
+            padding: 10px 15px;
+            margin: 5px;
+        }
+        #infoBox {
+            position: fixed;
+            top: 70px;
+            left: 10px;
+            background-color: rgba(255,255,255,0.8);
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            z-index: 9997;
+        }
+        .example-button {
+            position: fixed;
+            padding: 15px;
+            background-color: lightblue;
+            border: 1px solid blue;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="webgazerStatus">Status: Initializing...</div>
+    <div id="infoBox">
+        <p><strong>Instructions:</strong></p>
+        <ol>
+            <li>Allow webcam access when prompted.</li>
+            <li>Look at your screen. A video feed of your face should appear briefly for setup.</li>
+            <li>Calibrate by clicking the red dots as they appear. Click each dot multiple times while looking at it.</li>
+            <li>After calibration, a red dot should follow your gaze on the page.</li>
+        </ol>
+        <p>This is a demo. Accuracy varies. It interacts with elements *on this page*.</p>
+    </div>
+
+    <div class="controls">
+        <button id="calibrateBtn">Start/Recalibrate</button>
+        <button id="stopBtn" disabled>Stop Tracking</button>
+        <a href="{{ url_for('dashboard') }}" style="padding:10px 15px; background-color: #6c757d; color:white; text-decoration:none; border-radius:4px; margin-left:10px;">Back to Dashboard</a>
+    </div>
+
+    <!-- Example interactive elements -->
+    <button class="example-button" style="top: 20%; left: 20%;" onclick="alert('Button 1 Clicked!')">Button 1</button>
+    <button class="example-button" style="top: 70%; left: 70%;" onclick="alert('Button 2 Clicked!')">Button 2</button>
+    <button class="example-button" style="top: 40%; left: 80%;" onclick="alert('Button 3 Clicked!')">Button 3</button>
+
+
+    <script type="text/javascript">
+        let webgazerInstance = null;
+        let isCalibrating = false;
+        let calibrationPoints = [
+            { x: 0.1, y: 0.1 }, { x: 0.5, y: 0.1 }, { x: 0.9, y: 0.1 },
+            { x: 0.1, y: 0.5 }, { x: 0.5, y: 0.5 }, { x: 0.9, y: 0.5 },
+            { x: 0.1, y: 0.9 }, { x: 0.5, y: 0.9 }, { x: 0.9, y: 0.9 }
+        ];
+        let currentCalibrationPointIndex = 0;
+        let clicksPerCalibrationPoint = 0;
+        const CLICKS_NEEDED_PER_POINT = 5; // Number of clicks per calibration dot
+
+        const statusDiv = document.getElementById('webgazerStatus');
+        const calibrateBtn = document.getElementById('calibrateBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        function updateStatus(message) {
+            if (statusDiv) statusDiv.textContent = `Status: ${message}`;
+            console.log("WebGazer Status:", message);
+        }
+
+        function startWebGazer() {
+            if (webgazerInstance) {
+                console.log("WebGazer already started. Resuming.");
+                webgazerInstance.resume();
+                updateStatus("Resumed. Recalibrate if needed.");
+                stopBtn.disabled = false;
+                calibrateBtn.textContent = "Recalibrate";
+                return;
+            }
+
+            updateStatus("Requesting webcam access...");
+            webgazer.setRegression('ridge') // You can experiment with different regressors
+                .setGazeListener((data, elapsedTime) => {
+                    if (data == null || isCalibrating) {
+                        return;
+                    }
+                    // data.x, data.y are gaze coordinates on the screen
+                    // console.log(data.x, data.y, elapsedTime);
+                    // Here you could move a custom cursor div, or check for dwell on elements
+                })
+                .saveDataAcrossSessions(true) // Try to save calibration data
+                .begin()
+                .then(() => {
+                    updateStatus("Tracking started. Please calibrate.");
+                    webgazerInstance = webgazer;
+                    webgazerInstance.showPredictionPoints(true); // Show the red gaze dot
+                    webgazerInstance.showVideoPreview(true); // Show video preview during setup/calibration
+                    webgazerInstance.showFaceOverlay(true);
+                    webgazerInstance.showFaceFeedbackBox(true);
+                    stopBtn.disabled = false;
+                    calibrateBtn.textContent = "Recalibrate";
+                    // Start calibration immediately after starting
+                    startCalibration();
+                })
+                .catch(err => {
+                    console.error("Error starting WebGazer:", err);
+                    updateStatus("Error starting: " + err);
+                    alert("Could not start eye tracking. Please ensure webcam access is allowed and no other app is using the camera.");
+                });
+        }
+
+        function stopWebGazer() {
+            if (webgazerInstance) {
+                console.log("Stopping WebGazer.");
+                webgazerInstance.pause(); // Pauses tracking
+                webgazerInstance.showPredictionPoints(false);
+                webgazerInstance.showVideoPreview(false);
+                webgazerInstance.showFaceOverlay(false);
+                webgazerInstance.showFaceFeedbackBox(false);
+                // webgazerInstance.end(); // Use end() if you want to completely stop and clear data
+                updateStatus("Tracking stopped.");
+                stopBtn.disabled = true;
+                calibrateBtn.textContent = "Start Tracking";
+            }
+        }
+
+        function startCalibration() {
+            if (!webgazerInstance) {
+                alert("Please start tracking first.");
+                return;
+            }
+            isCalibrating = true;
+            currentCalibrationPointIndex = 0;
+            clicksPerCalibrationPoint = 0;
+            webgazerInstance.clearData(); // Clear previous calibration data
+            console.log("Starting calibration process.");
+            updateStatus("Calibration: Look at and click the red dots.");
+            webgazerInstance.showPredictionPoints(false); // Hide gaze dot during calibration clicks
+            displayCalibrationPoint();
+        }
+
+        function displayCalibrationPoint() {
+            removeCalibrationPoint(); // Remove previous point if any
+            if (currentCalibrationPointIndex >= calibrationPoints.length) {
+                calibrationFinished();
+                return;
+            }
+
+            const point = calibrationPoints[currentCalibrationPointIndex];
+            const calPointDiv = document.createElement('div');
+            calPointDiv.id = 'currentCalPoint';
+            calPointDiv.className = 'calibration-point';
+            calPointDiv.style.left = (point.x * window.innerWidth - 10) + 'px'; // -10 to center 20px dot
+            calPointDiv.style.top = (point.y * window.innerHeight - 10) + 'px';
+            
+            calPointDiv.onclick = function() {
+                clicksPerCalibrationPoint++;
+                console.log(`Clicked calibration point ${currentCalibrationPointIndex + 1}, click ${clicksPerCalibrationPoint}/${CLICKS_NEEDED_PER_POINT}`);
+                if (clicksPerCalibrationPoint >= CLICKS_NEEDED_PER_POINT) {
+                    currentCalibrationPointIndex++;
+                    clicksPerCalibrationPoint = 0;
+                    displayCalibrationPoint();
+                } else {
+                    // Optional: visual feedback for click registered on current point
+                    calPointDiv.style.backgroundColor = 'orange';
+                    setTimeout(() => { if(document.getElementById('currentCalPoint')) document.getElementById('currentCalPoint').style.backgroundColor = 'red';}, 100);
+                }
+            };
+            document.body.appendChild(calPointDiv);
+        }
+
+        function removeCalibrationPoint() {
+            const existingPoint = document.getElementById('currentCalPoint');
+            if (existingPoint) {
+                existingPoint.remove();
+            }
+        }
+
+        function calibrationFinished() {
+            isCalibrating = false;
+            removeCalibrationPoint();
+            webgazerInstance.showPredictionPoints(true); // Show gaze dot again
+            updateStatus("Calibration finished! Tracking active.");
+            console.log("Calibration finished.");
+            alert("Calibration complete! The red dot should now follow your gaze.");
+        }
+
+        calibrateBtn.addEventListener('click', () => {
+            if (!webgazerInstance || !webgazerInstance.isReady()) {
+                startWebGazer(); // This will also trigger calibration
+            } else {
+                startCalibration(); // If already started, just recalibrate
+            }
+        });
+
+        stopBtn.addEventListener('click', stopWebGazer);
+
+        window.onload = function() {
+            updateStatus("Ready. Click 'Start Tracking/Recalibrate'.");
+            // Optionally, try to start automatically if user has given permission before
+            // startWebGazer(); 
+        };
+
+        window.onbeforeunload = function() {
+            if (webgazerInstance) {
+                webgazerInstance.end(); // Clean up WebGazer when leaving the page
+            }
+        }
+
+    </script>
+</body>
+</html>

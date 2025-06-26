@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submit Assignment: {{ assignment.title }} | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}"> <!-- Optional: for card styling -->
+    <style>
+        .container { max-width: 700px; margin: 20px auto; padding: 20px; }
+        .page-header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .form-group .assignment-details p { margin: 5px 0; }
+        .btn-submit {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .btn-submit:hover { background-color: var(--primary-color-dark); }
+        .btn-back {
+            display: inline-block;
+            margin-top: 15px;
+            text-decoration: none;
+            color: var(--primary-color);
+        }
+        body.dark-mode .page-header { border-bottom-color: #444; }
+        body.dark-mode .form-group input[type="file"] { background-color: #3a3a3a; border-color: #555; color: #eee; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2>Submit Assignment: {{ assignment.title }}</h2>
+            <p><strong>Subject:</strong> {{ assignment.subject }}</p>
+            <p><strong>Semester:</strong> {{ assignment.semester }}</p>
+            {% if assignment.due_date %}
+            <p><strong>Due Date:</strong> {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') }}</p>
+            {% endif %}
+            {% if assignment.description %}
+            <p><strong>Description:</strong> {{ assignment.description }}</p>
+            {% endif %}
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('submit_assignment', assignment_id=assignment.id) }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="submission_file">Upload your file:</label>
+                <input type="file" name="submission_file" id="submission_file" required>
+                <small>Max file size: 16MB. Allowed types depend on assignment.</small>
+            </div>
+            
+            <div class="form-group assignment-details">
+                <h4>Assignment Details:</h4>
+                <p><strong>Title:</strong> {{ assignment.title }}</p>
+                <p>To download the assignment description again: 
+                    <a href="{{ url_for('serve_upload', filename=assignment.filename) }}" download>Download Assignment File</a>
+                </p>
+            </div>
+
+            <button type="submit" class="btn-submit">Submit Assignment</button>
+        </form>
+        <a href="{{ url_for('dashboard') }}" class="btn-back">&laquo; Back to Dashboard</a>
+    </div>
+
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+</body>
+</html>

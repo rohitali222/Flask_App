@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report Card - {{ attempt.test_title }}</title>
+    <style>
+        /* Styles optimized for PDF rendering by WeasyPrint */
+        body { 
+            font-family: "DejaVu Sans", sans-serif; /* Good for Unicode, common on Linux, WeasyPrint might find it */
+            /* As a fallback, common system fonts: font-family: Arial, Helvetica, sans-serif; */
+            margin: 0; 
+            padding: 0; 
+            font-size: 10pt; 
+            line-height: 1.4;
+        }
+        .container { 
+            padding: 20px; 
+            width: 100%; /* Ensure it uses the page width */
+            box-sizing: border-box;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-bottom: 1px solid #ccc; 
+            padding-bottom: 10px; 
+        }
+        .header h1 { margin: 0; font-size: 18pt; }
+        .header p { margin: 5px 0; font-size: 10pt; color: #333; }
+        
+        .student-info, .test-info, .summary-info {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #f9f9f9; /* Light background for sections */
+        }
+        .student-info p, .test-info p, .summary-info p { margin: 5px 0; }
+        .summary-info strong { font-size: 11pt; }
+
+        h3 { 
+            font-size: 14pt; 
+            margin-top: 20px; 
+            margin-bottom: 10px; 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 5px;
+        }
+        
+        .question-block {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dotted #ccc;
+            page-break-inside: avoid; /* Try to keep question blocks on one page */
+        }
+        .question-block:last-child { border-bottom: none; }
+        .question-text { font-weight: bold; font-size: 11pt; }
+        .question-meta { font-size: 9pt; color: #555; margin-bottom: 5px; }
+        
+        .answer { padding-left: 15px; margin: 3px 0; }
+        .student-answer { background-color: #f0f8ff; padding: 3px; border-radius: 2px; }
+        .correct-answer { background-color: #f0fff0; padding: 3px; border-radius: 2px; }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-size: 8pt;
+            font-weight: bold;
+            border-radius: 3px;
+            color: white;
+            margin-left: 5px;
+        }
+        .correct { background-color: #28a745; /* Green */ }
+        .incorrect { background-color: #dc3545; /* Red */ }
+        
+        .question-image { 
+            max-width: 80%; /* Relative to its container */
+            height: auto; 
+            max-height: 200px; /* Adjust as needed */
+            display: block; 
+            margin: 8px auto; /* Center the image */
+            border: 1px solid #ddd;
+        }
+
+        /* WeasyPrint specific page numbering */
+        @page {
+            size: A4;
+            margin: 1.5cm; /* Or your preferred margins */
+            
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                color: #666;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Student Report Card</h1>
+            <p>Smart Tutoring System</p>
+        </div>
+
+        <div class="student-info">
+            <h3>Student Details</h3>
+            <p><strong>Name:</strong> {{ attempt.student_name | default('N/A') }}</p>
+            <p><strong>Roll No:</strong> {{ attempt.roll_number | default('N/A') }}</p>
+        </div>
+
+        <div class="test-info">
+            <h3>Test Details</h3>
+            <p><strong>Test Title:</strong> {{ attempt.test_title | default('N/A') }}</p>
+            <p><strong>Subject:</strong> {{ attempt.test_subject | default('N/A') }}</p>
+            <p><strong>Semester:</strong> {{ attempt.test_semester | default('N/A') }}</p>
+            <p><strong>Attempted On:</strong> {{ attempt.started_at.strftime('%Y-%m-%d %H:%M') if attempt.started_at else 'N/A' }}</p>
+        </div>
+
+        <div class="summary-info">
+            <h3>Performance Summary</h3>
+            <p><strong>Score:</strong> {{ attempt.score | default('N/A') }} / {{ attempt.total_marks_possible | default(attempt.actual_test_total_marks | default(attempt.num_questions_in_attempt | default('N/A'))) }}</p>
+            <p><strong>Percentage:</strong> {{ "%.2f"|format(attempt.percentage) ~ '%' if attempt.percentage is not none else 'N/A' }}</p>
+            <p><strong>Level Achieved:</strong> {{ attempt.level_display | default('N/A') }}</p>
+        </div>
+
+        <h3>Detailed Question Analysis</h3>
+        {% if questions_with_answers %}
+            {% for qa_item in questions_with_answers %}
+            <div class="question-block">
+                <p class="question-text">{{ loop.index }}. {{ qa_item.question_text | safe }}</p>
+                <p class="question-meta">
+                    Topic: {{ qa_item.topic | default('N/A') }} | 
+                    Type: {{ qa_item.question_type | title | default('N/A') }} |
+                    Marks: {{ qa_item.question_marks | default('1') }}
+                </p>
+                
+                <!-- Image display using image_full_url -->
+                {% if qa_item.image_full_url %}
+                    <img src="{{ qa_item.image_full_url }}" alt="Question Image for question {{ loop.index }}" class="question-image">
+                {% elif qa_item.image_filename %}
+                    <p><small><em>(Image reference: {{ qa_item.image_filename }} - Full URL not available for PDF)</em></small></p>
+                {% endif %}
+
+                <p class="answer student-answer">
+                    <strong>Your Answer:</strong> 
+                    {{ qa_item.selected_option_text if qa_item.selected_option_text is not none else "Not Answered" }}
+                    {% if qa_item.is_correct %}
+                        <span class="status-badge correct">Correct</span>
+                    {% else %}
+                        <span class="status-badge incorrect">Incorrect</span>
+                    {% endif %}
+                </p>
+                {% if not qa_item.is_correct or qa_item.question_type != 'mcq' %}
+                    <p class="answer correct-answer"><strong>Correct Answer:</strong> {{ qa_item.correct_option_text | default('N/A') }}</p>
+                {% endif %}
+                <p style="font-size:9pt; margin-left:15px;"><small>Marks Awarded: {{ qa_item.marks_awarded if qa_item.marks_awarded is not none else '0' }} / {{ qa_item.question_marks | default('1') }}</small></p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No detailed question results found for this attempt.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

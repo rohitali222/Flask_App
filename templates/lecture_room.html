@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Lecture: {{ lecture_id }} | STS</title>
+    {# Link to your main style.css if you have one, or use the embedded styles #}
+    {#
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> #}
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .video-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e9e9e9;
+            border-radius: 4px;
+        }
+
+        .video-container {
+            border: 1px solid #ccc;
+            background-color: #000;
+            /* Black background for video elements */
+            position: relative;
+            min-width: 280px;
+            /* Minimum width for video elements */
+            flex: 1;
+            /* Allow videos to grow */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: auto;
+            /* Maintain aspect ratio */
+            max-height: 400px;
+            /* Limit max height for individual videos */
+            display: block;
+            background-color: #222;
+            /* Darker background if video is letterboxed */
+        }
+
+        .video-label {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 3px 6px;
+            font-size: 0.85em;
+            border-radius: 3px;
+        }
+
+        /* Local video preview for the current user */
+        #localVideoContainer {
+            max-width: 320px;
+            /* Default size for local preview */
+        }
+
+        /* Student's local video preview can be smaller or hidden if not sending video */
+        /* This is now controlled by JS based on role if needed */
+
+
+        /* Main area for teacher's video on student's screen */
+        .teacher-video-main {
+            min-width: 400px;
+            /* Make teacher video larger */
+            flex-basis: 60%;
+            /* Try to give it more space */
+            max-height: 500px;
+            /* Allow teacher video to be larger */
+        }
+
+        .teacher-video-main video {
+            max-height: 100%;
+            /* Fill the container */
+        }
+
+
+        /* For teacher viewing student audio (if visual element is used) */
+        /* This is now handled by a hidden audio element, so this style might not be needed */
+        .student-audio-container video {
+            background-color: #1a1a1a;
+            min-height: 50px;
+            /* So the label is visible if it were a video tag */
+        }
+
+
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .controls button {
+            padding: 10px 15px;
+            margin: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .controls button:hover {
+            background-color: #e9e9e9;
+        }
+
+        .controls button.active-danger {
+            background-color: #d9534f;
+            /* Red for stop/active danger actions */
+            color: white;
+        }
+
+        .controls button.active-success {
+            background-color: #5cb85c;
+            /* Green for start/active success actions */
+            color: white;
+        }
+
+
+        #chatArea {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+
+        #chatArea h3 {
+            margin-top: 0;
+        }
+
+        #messages {
+            list-style-type: none;
+            padding: 10px;
+            height: 250px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            background-color: #fdfdfd;
+            border-radius: 4px;
+        }
+
+        #messages li {
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.95em;
+        }
+
+        #messages li small {
+            /* For sender and timestamp */
+            font-size: 0.75em;
+            color: #777;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        #messageInput {
+            width: calc(100% - 90px);
+            /* Adjust based on send button width */
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        #sendMessage {
+            width: 80px;
+            padding: 10px;
+            border: 1px solid #4CAF50;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Basic Dark Mode (can be expanded) */
+        body.dark-mode {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .container {
+            background-color: #2b2b2b;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        body.dark-mode .video-area {
+            background-color: #252525;
+        }
+
+        body.dark-mode .video-container {
+            border-color: #444;
+            background-color: #111;
+            /* Darker background for video containers */
+        }
+
+        body.dark-mode .video-container video {
+            background-color: #000;
+            /* Pitch black for video element itself */
+        }
+
+        body.dark-mode .controls {
+            background-color: #333;
+        }
+
+        body.dark-mode .controls button {
+            background-color: #4f4f4f;
+            border-color: #555;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .controls button:hover {
+            background-color: #5a5a5a;
+        }
+
+        body.dark-mode .controls button.active-danger {
+            background-color: #c9302c;
+        }
+
+        body.dark-mode .controls button.active-success {
+            background-color: #4cae4c;
+        }
+
+        body.dark-mode #chatArea {
+            border-top-color: #444;
+        }
+
+        body.dark-mode #messages {
+            border-color: #444;
+            background-color: #333;
+        }
+
+        body.dark-mode #messages li {
+            border-bottom-color: #454545;
+        }
+
+        body.dark-mode #messages li small {
+            color: #aaa;
+        }
+
+        body.dark-mode #messageInput {
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+            border: 1px solid #555;
+        }
+
+        body.dark-mode #sendMessage {
+            background-color: #007bff;
+            /* Example dark mode send button */
+            border-color: #007bff;
+        }
+    </style>
+    <!-- Include Socket.IO client library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Lecture Room: {{ lecture_id }}</h1>
+        <p>Welcome, {{ username }}! (Role: {{ user_role }})</p>
+
+        <div class="video-area">
+            {# Local video preview container for the current user #}
+            {# Student's local video is for preview only; video track is not sent #}
+            <div id="localVideoContainer" class="video-container" {% if user_role=='student' %}
+                style="max-width: 240px; /* Smaller preview for student */" {% endif %}>
+                <video id="localVideo" autoplay muted playsinline></video> {# muted is important here to prevent echo #}
+                <span class="video-label">You ({{ username }})</span>
+            </div>
+
+            {# Remote videos (Teacher's video for students, or student audio for teacher) will be added here by
+            JavaScript #}
+            {# A specific div with id="teacherVideoArea" will be created by JS for students to see the teacher's main
+            feed #}
+        </div>
+
+        <div class="controls">
+            <button id="toggleAudio">Mute My Audio</button>
+            {# Teacher gets video and screen share controls #}
+            {% if user_role == 'teacher' %}
+            <button id="toggleVideo">Stop My Video</button>
+            <button id="toggleScreenShare">Share Screen</button>
+            {% else %}
+            {# Student's "Stop My Video" button only affects their local preview, as video is not sent #}
+            <button id="toggleVideo">Stop My Video (Preview)</button>
+            {% endif %}
+            <button id="leaveLectureBtn">Leave Lecture</button>
+        </div>
+
+        <div id="chatArea">
+            <h3>Chat</h3>
+            <ul id="messages"></ul>
+            <input type="text" id="messageInput" placeholder="Type a message...">
+            <button id="sendMessage">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const lectureId = "{{ lecture_id }}";
+        const currentUsername = "{{ username }}";
+        const currentUserRole = "{{ user_role }}";
+        let localStream;
+        let peerConnections = {}; // Keyed by remote user's SID
+        let myClientSID = '';
+
+        const socket = io();
+
+        const localVideoEl = document.getElementById('localVideo');
+        const localVideoContainer = document.getElementById('localVideoContainer'); // The div for local video
+        const remoteVideoArea = document.querySelector('.video-area'); // Main area for remote videos/audio players
+        const toggleAudioBtn = document.getElementById('toggleAudio');
+        const toggleVideoBtn = document.getElementById('toggleVideo');
+        const leaveLectureBtn = document.getElementById('leaveLectureBtn');
+        const messagesUl = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessage');
+
+        // Screen sharing specific (for teacher)
+        const toggleScreenShareBtn = document.getElementById('toggleScreenShare');
+        let screenStream = null;
+        let originalVideoTrack = null; // To store camera track when screen sharing
+        let isScreenSharing = false;
+
+        console.log(`[${currentUserRole}] Lecture Room Initialized. User: ${currentUsername}, Lecture ID: ${lectureId}`);
+
+        const stunServers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun.services.mozilla.com' }
+            ]
+        };
+
+        socket.on('connect', () => {
+            myClientSID = socket.id;
+            console.log(`[${currentUserRole}] Socket.IO Connected. My SID: ${myClientSID}`);
+            socket.emit('join_lecture', { lecture_id: lectureId, username: currentUsername, role: currentUserRole });
+        });
+
+        async function startMedia() {
+            console.log(`[${currentUserRole}] Attempting to start media...`);
+            try {
+                // Both teacher and student get local video and audio.
+                // Student uses video for local preview only.
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                if (localVideoEl) {
+                    localVideoEl.srcObject = localStream;
+                    // localVideoEl.muted = true; // Already muted in HTML, crucial for preventing echo
+                    console.log(`[${currentUserRole}] Local media stream started and attached to local video element.`);
+                } else {
+                    console.error(`[${currentUserRole}] localVideoEl not found!`);
+                }
+
+                if (currentUserRole === 'student' && localVideoContainer) {
+                    // Ensure student's local video preview container is visible
+                    localVideoContainer.style.display = 'flex'; // or 'block' depending on your CSS for .video-container
+                    console.log("[Student] Local video preview is active. Will only send audio.");
+                } else if (currentUserRole === 'teacher' && localVideoContainer) {
+                    localVideoContainer.style.display = 'flex';
+                }
+
+            } catch (error) {
+                console.error(`[${currentUserRole}] Error accessing media devices:`, error);
+                alert("Could not access your camera/microphone. Please check permissions and ensure no other app is using them.");
+            }
+        }
+        startMedia();
+
+        toggleAudioBtn.addEventListener('click', () => {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    toggleAudioBtn.textContent = audioTrack.enabled ? 'Mute My Audio' : 'Unmute My Audio';
+                    console.log(`[${currentUserRole}] Audio ${audioTrack.enabled ? 'unmuted' : 'muted'}`);
+                }
+            }
+        });
+
+        if (toggleVideoBtn) { // toggleVideoBtn might not exist for students if hidden by Jinja
+            toggleVideoBtn.addEventListener('click', () => {
+                if (localStream) {
+                    const videoTrack = localStream.getVideoTracks()[0];
+                    if (videoTrack) {
+                        videoTrack.enabled = !videoTrack.enabled; // Toggles the track itself
+                        toggleVideoBtn.textContent = videoTrack.enabled ? 'Stop My Video' : 'Start My Video';
+                        console.log(`[${currentUserRole}] Video track ${videoTrack.enabled ? 'enabled' : 'disabled'}`);
+                        // For students, this only affects their local preview as video track isn't added to PC.
+                        // For teachers, this affects what they send (if not screen sharing).
+                    }
+                }
+            });
+        }
+
+        leaveLectureBtn.addEventListener('click', async () => {
+            if (currentUserRole === 'teacher') {
+                console.log(`[Teacher] Attempting to end lecture ID: ${lectureId} via fetch.`);
+                try {
+                    // The URL for end_live_lecture should be correctly generated by url_for
+                    const response = await fetch(`{{ url_for('end_live_lecture', lecture_id=0) }}`.replace('/0', `/${lectureId}`), {
+                        method: 'POST', // Assuming your route expects POST
+                        headers: { /* Add CSRF token if needed */ }
+                    });
+                    const responseData = await response.json();
+                    if (response.ok) {
+                        console.log('[Teacher] End lecture server response:', responseData.message);
+                    } else {
+                        console.error('[Teacher] Failed to end lecture on server:', response.status, responseData.message);
+                    }
+                } catch (error) {
+                    console.error('[Teacher] Network error sending end lecture request:', error);
+                }
+            }
+
+            console.log(`[${currentUserRole}] Emitting 'leave_lecture' and cleaning up.`);
+            socket.emit('leave_lecture', { lecture_id: lectureId });
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            for (const sid in peerConnections) {
+                if (peerConnections[sid]) peerConnections[sid].close();
+            }
+            peerConnections = {};
+            window.location.href = "{{ url_for('dashboard') }}";
+        });
+
+        function addChatMessage(message, sender = "System", isSelf = false) {
+            console.log(`[Chat UI] Adding message: "${message}" from ${sender}, isSelf: ${isSelf}`);
+            const li = document.createElement('li');
+            li.style.textAlign = isSelf ? 'right' : 'left';
+            li.innerHTML = `<small style="display:block; color: #888;">${sender} - ${new Date().toLocaleTimeString()}</small>${message}`;
+            messagesUl.appendChild(li);
+            messagesUl.scrollTop = messagesUl.scrollHeight;
+        }
+
+        sendMessageBtn.addEventListener('click', () => {
+            const message = messageInput.value.trim();
+            if (message) {
+                console.log(`[Chat Send] Emitting 'lecture_message'. Lecture ID: ${lectureId}, Sender: ${currentUsername}, Message: "${message}"`);
+                socket.emit('lecture_message', { lecture_id: lectureId, message: message, sender: currentUsername });
+                addChatMessage(message, "You (Me)", true);
+                messageInput.value = '';
+            }
+        });
+        messageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessageBtn.click(); } });
+
+        socket.on('new_message', (data) => {
+            console.log("[Chat Receive] 'new_message' event received from server:", data);
+            if (data && data.sender && data.message) {
+                if (currentUsername && data.sender !== currentUsername) {
+                    addChatMessage(data.message, data.sender);
+                } else if (!currentUsername) {
+                    console.warn("[Chat Receive] currentUsername is not defined on client, displaying message anyway.");
+                    addChatMessage(data.message, data.sender);
+                }
+            } else {
+                console.warn("[Chat Receive] Received 'new_message' but data is malformed:", data);
+            }
+        });
+
+        // In templates/lecture_room.html, inside the <script> tag
+
+        function createPeerConnection(targetSid, targetUsername, targetUserRole = 'student') {
+            console.log(`[${currentUserRole}] Attempting to create PC for ${targetUsername} (SID: ${targetSid}, Role: ${targetUserRole})`);
+
+            if (!localStream) {
+                console.error(`[${currentUserRole}] Local stream not available. Cannot create peer connection.`);
+                // For teacher, localStream is essential to send. For student, it's needed for audio.
+                alert("Your camera/microphone is not ready. Please check permissions.");
+                return null;
+            }
+
+            if (peerConnections[targetSid]) {
+                console.warn(`[${currentUserRole}] PC for ${targetSid} already exists. Returning existing.`);
+                return peerConnections[targetSid];
+            }
+
+            const pc = new RTCPeerConnection(stunServers);
+            peerConnections[targetSid] = pc;
+            peerConnections[targetSid].targetRole = targetUserRole;
+            console.log(`[${currentUserRole}] Created new PC for ${targetSid}`);
+
+            // Add local stream tracks to the connection based on role
+            if (currentUserRole === 'teacher') {
+                // Teacher sends current video (camera or screen) and audio
+                const streamToSend = isScreenSharing && screenStream ? screenStream : localStream;
+                if (streamToSend) {
+                    // ****** THIS IS THE SNIPPET YOU ASKED ABOUT ******
+                    streamToSend.getTracks().forEach(track => {
+                        console.log(`[Teacher] Adding local ${track.kind} track (from ${isScreenSharing ? 'screen' : 'camera'} stream) to PC for ${targetSid}. Track ID: ${track.id}, Enabled: ${track.enabled}`);
+                        pc.addTrack(track, streamToSend);
+                    });
+                    // **************************************************
+                } else {
+                    console.warn("[Teacher] No stream available to send tracks (localStream or screenStream is null).");
+                }
+            } else if (currentUserRole === 'student') {
+                // Student ONLY sends their AUDIO track. Video is for local preview only.
+                localStream.getAudioTracks().forEach(track => {
+                    console.log(`[Student] Adding local audio track to PC for ${targetSid}. Track ID: ${track.id}, Enabled: ${track.enabled}`);
+                    pc.addTrack(track, localStream);
+                });
+                console.log("[Student] Configuration: Only audio track added to be sent to teacher.");
+            }
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log(`[${currentUserRole}] Sending ICE candidate to ${targetSid}:`, event.candidate ? (event.candidate.candidate ? event.candidate.candidate.substring(0, 30) + "..." : "Candidate obj without .candidate") : 'null candidate content');
+                    socket.emit('webrtc_ice_candidate', { lecture_id: lectureId, target_sid: targetSid, candidate: event.candidate });
+                } else {
+                    console.log(`[${currentUserRole}] All ICE candidates sent for ${targetSid}.`);
+                }
+            };
+
+            pc.ontrack = (event) => {
+                console.log(`[${currentUserRole}] ONTRACK event from ${targetUsername} (SID: ${targetSid}). Number of streams: ${event.streams.length}. Track kind: ${event.track.kind}, Track ID: ${event.track.id}`);
+                if (event.streams && event.streams[0]) {
+                    const remoteStream = event.streams[0];
+                    console.log(`  Remote Stream ID: ${remoteStream.id}, Active: ${remoteStream.active}. Tracks in stream: ${remoteStream.getTracks().length}`);
+                    remoteStream.getTracks().forEach(track => {
+                        console.log(`    Remote track details: kind=${track.kind}, id=${track.id}, label='${track.label}', enabled=${track.enabled}, muted=${track.muted}, readyState=${track.readyState}`);
+                    });
+
+                    if (currentUserRole === 'student' && peerConnections[targetSid]?.targetRole === 'teacher') {
+                        console.log(`[Student] Received stream/track from Teacher ${targetUsername}. Attempting to display/update.`);
+                        addRemoteVideo(targetSid, targetUsername, remoteStream, true); // isTeacherStream = true
+                    } else if (currentUserRole === 'teacher' && peerConnections[targetSid]?.targetRole === 'student' && event.track.kind === 'audio') {
+                        console.log(`[Teacher] Received audio track from Student ${targetUsername}.`);
+                        addRemoteAudioForStudent(targetSid, targetUsername, remoteStream);
+                    }
+                } else {
+                    console.warn(`[${currentUserRole}] ONTRACK from ${targetUsername}: No streams[0] in event. Handling individual track. Track kind: ${event.track.kind}`);
+                    if (currentUserRole === 'student' && peerConnections[targetSid]?.targetRole === 'teacher' && event.track) {
+                        console.log("[Student] Creating new stream from individual teacher track for ontrack (fallback).");
+                        const newStream = new MediaStream([event.track]);
+                        addRemoteVideo(targetSid, targetUsername, newStream, true);
+                    }
+                }
+            };
+
+            pc.oniceconnectionstatechange = () => {
+                console.log(`[${currentUserRole}] ICE state for ${targetUsername} (SID: ${targetSid}): ${pc.iceConnectionState}`);
+                if (['failed', 'disconnected', 'closed'].includes(pc.iceConnectionState)) removePeerConnection(targetSid);
+            };
+            return pc;
+        }
+
+        function addRemoteVideo(sid, username, stream, isTeacherStream = false) {
+            console.log(`[${currentUserRole}] addRemoteVideo called for SID: ${sid}, User: ${username}, isTeacherStream: ${isTeacherStream}. Stream valid? ${!!stream}`);
+            if (!stream) {
+                console.error("addRemoteVideo: Stream is null or undefined for SID:", sid);
+                return;
+            }
+            console.log(`  Stream for ${username} (SID: ${sid}) has ${stream.getTracks().length} tracks. Video tracks: ${stream.getVideoTracks().length}, Audio tracks: ${stream.getAudioTracks().length}`);
+            stream.getTracks().forEach(t => console.log(`    Track in addRemoteVideo (for ${username}, SID: ${sid}): kind=${t.kind}, id=${t.id}, enabled=${t.enabled}, muted=${t.muted}, readyState=${t.readyState}`));
+
+            if (currentUserRole === 'student' && isTeacherStream) {
+                let teacherVideoArea = document.getElementById('teacherVideoArea');
+                let videoElement;
+
+                if (!teacherVideoArea) {
+                    console.log("[Student] Creating teacherVideoArea for teacher's stream.");
+                    teacherVideoArea = document.createElement('div');
+                    teacherVideoArea.id = 'teacherVideoArea';
+                    teacherVideoArea.className = 'video-container teacher-video-main';
+
+                    videoElement = document.createElement('video');
+                    videoElement.autoplay = true;
+                    videoElement.playsInline = true;
+                    videoElement.controls = true;
+
+                    const label = document.createElement('span');
+                    label.className = 'video-label';
+                    label.textContent = `Teacher: ${username}`;
+
+                    teacherVideoArea.appendChild(videoElement);
+                    teacherVideoArea.appendChild(label);
+                    remoteVideoArea.insertBefore(teacherVideoArea, remoteVideoArea.firstChild);
+                } else {
+                    console.log("[Student] Teacher video area already exists. Finding video element to update.");
+                    videoElement = teacherVideoArea.querySelector('video');
+                    if (!videoElement) {
+                        console.error("[Student] CRITICAL: teacherVideoArea exists but could not find video element inside it!");
+                        videoElement = document.createElement('video');
+                        videoElement.autoplay = true; videoElement.playsInline = true; videoElement.controls = true;
+                        teacherVideoArea.insertBefore(videoElement, teacherVideoArea.firstChild);
+                    }
+                }
+
+                if (videoElement) {
+                    console.log(`[Student] Assigning/Updating teacher's stream to video element. Stream ID: ${stream.id}`);
+                    videoElement.srcObject = stream;
+                    console.log(`[Student] Assigned stream. videoElement.srcObject ID:`, videoElement.srcObject ? videoElement.srcObject.id : 'null');
+
+                    if (videoElement.srcObject && videoElement.srcObject.getVideoTracks().length > 0) {
+                        console.log(`[Student] Teacher's video element has ${videoElement.srcObject.getVideoTracks().length} video track(s). First track enabled: ${videoElement.srcObject.getVideoTracks()[0].enabled}, readyState: ${videoElement.srcObject.getVideoTracks()[0].readyState}, label: '${videoElement.srcObject.getVideoTracks()[0].label}'`);
+                    } else {
+                        console.warn("[Student] Teacher's video element's srcObject does NOT have video tracks or srcObject is null/invalid after assignment.");
+                    }
+                } else {
+                    console.error("[Student] CRITICAL: Video element for teacher could not be found or created.");
+                }
+                return;
+            }
+            // If teacher is receiving something (e.g. student audio, though we use addRemoteAudioForStudent for that)
+            // This part is less likely to be used with current one-way video logic.
+        }
+
+        function addRemoteAudioForStudent(sid, username, stream) {
+            console.log(`[Teacher] addRemoteAudioForStudent called for student ${username} (SID: ${sid}). Stream valid? ${!!stream}`);
+            if (!stream || stream.getAudioTracks().length === 0) {
+                console.warn(`[Teacher] No audio tracks found in stream from student ${username}.`);
+                return;
+            }
+
+            let audioContainer = document.getElementById(`audioContainer_${sid}`);
+            if (!audioContainer) {
+                audioContainer = document.createElement('div');
+                audioContainer.id = `audioContainer_${sid}`;
+                audioContainer.style.display = "none"; // Hidden, as it's just for audio
+
+                const remoteAudio = document.createElement('audio');
+                remoteAudio.id = `remoteAudio_${sid}`;
+                remoteAudio.autoplay = true;
+                // remoteAudio.controls = true; // Optional for debugging
+
+                audioContainer.appendChild(remoteAudio);
+                document.body.appendChild(audioContainer); // Or a specific hidden div
+
+                remoteAudio.srcObject = stream;
+                console.log(`[Teacher] Playing audio from student ${username} (SID: ${sid}).`);
+            } else {
+                const audioEl = audioContainer.querySelector('audio');
+                if (audioEl) {
+                    audioEl.srcObject = stream;
+                    console.log(`[Teacher] Updated audio stream for student ${username} (SID: ${sid}).`);
+                }
+            }
+        }
+
+        function removePeerConnection(sid) {
+            console.log(`[${currentUserRole}] Attempting to remove PC for SID: ${sid}`);
+            if (peerConnections[sid]) {
+                if (peerConnections[sid].audioElement && currentUserRole === 'teacher' && peerConnections[sid].audioElement.parentElement) {
+                    peerConnections[sid].audioElement.parentElement.remove(); // Remove student audio container
+                    console.log(`[Teacher] Removed audio element container for SID: ${sid}`);
+                }
+                peerConnections[sid].close();
+                delete peerConnections[sid];
+                console.log(`[${currentUserRole}] PC closed and deleted for SID: ${sid}`);
+            }
+            if (currentUserRole === 'student') {
+                const teacherVideoArea = document.getElementById('teacherVideoArea');
+                // A more robust check would be if the 'sid' being removed was stored as the teacher's SID
+                if (teacherVideoArea && peerConnections[sid]?.isTeacherStream) { // Check if the removed peer was the teacher
+                    teacherVideoArea.remove();
+                    console.log(`[Student] Removed teacher's video area as teacher (SID: ${sid}) left or connection failed.`);
+                }
+            }
+            // General cleanup for any other video containers (less likely with current logic)
+            const videoContainer = document.getElementById(`videoContainer_${sid}`);
+            if (videoContainer) videoContainer.remove();
+
+            console.log(`[${currentUserRole}] Cleaned up connection for SID: ${sid}`);
+        }
+
+        // --- Socket.IO Event Handlers for WebRTC Signaling ---
+        socket.on('user_joined', async (data) => {
+            const { username: joinedUsername, sid: joinedSid, role: joinedRole } = data;
+            addChatMessage(`${joinedUsername} (${joinedRole}) joined the lecture.`);
+            console.log(`[${currentUserRole}] Event: 'user_joined'. User: ${joinedUsername} (SID: ${joinedSid}, Role: ${joinedRole})`);
+
+            if (currentUserRole === 'teacher' && joinedRole === 'student') {
+                if (!localStream && !isScreenSharing) {
+                    console.log("[Teacher] Local camera stream not ready, attempting to start media before offer.");
+                    await startMedia();
+                    if (!localStream) { console.error("[Teacher] Local camera stream failed to start. Cannot send offer."); return; }
+                }
+                console.log(`[Teacher] Initiating connection to student ${joinedUsername}`);
+                const pc = createPeerConnection(joinedSid, joinedUsername, 'student');
+                if (pc) {
+                    try {
+                        console.log(`[Teacher] Creating offer for ${joinedSid}`);
+                        const offer = await pc.createOffer({
+                            offerToReceiveAudio: true, // Teacher expects to receive audio from student
+                            offerToReceiveVideo: false // Teacher does NOT expect to receive video from student
+                        });
+                        console.log(`[Teacher] Setting local description with offer for ${joinedSid}`);
+                        await pc.setLocalDescription(offer);
+                        console.log(`[Teacher] Emitting 'webrtc_offer' to ${joinedSid}`);
+                        socket.emit('webrtc_offer', { lecture_id: lectureId, target_sid: joinedSid, offer: offer });
+                    } catch (error) { console.error("[Teacher] Error creating/sending offer:", error); }
+                }
+            }
+        });
+
+        socket.on('offer_received', async (data) => {
+            const { offer, sender_sid: offererSid, sender_username: offererUsername } = data;
+            console.log(`[${currentUserRole}] Event: 'offer_received' from ${offererUsername} (SID: ${offererSid})`, offer);
+
+            if (currentUserRole === 'student' && !localStream) {
+                console.log("[Student] Local audio stream not ready, attempting to start media before answer.");
+                await startMedia();
+                if (!localStream) console.warn("[Student] Mic/Cam access might have failed. Can receive but not send audio.");
+            }
+
+            const pc = createPeerConnection(offererSid, offererUsername, 'teacher');
+            if (pc) {
+                console.log(`[Student] Setting remote description with offer from ${offererSid}`);
+                try {
+                    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                    console.log(`[Student] Creating answer for ${offererSid}`);
+                    const answer = await pc.createAnswer();
+                    console.log(`[Student] Setting local description with answer for ${offererSid}`);
+                    await pc.setLocalDescription(answer);
+                    console.log(`[Student] Emitting 'webrtc_answer' to ${offererSid}`);
+                    socket.emit('webrtc_answer', { lecture_id: lectureId, target_sid: offererSid, answer: answer });
+                } catch (error) { console.error("[Student] Error processing offer/creating answer:", error); }
+            }
+        });
+
+        socket.on('answer_received', async (data) => {
+            const { answer, sender_sid: answererSid } = data;
+            console.log(`[${currentUserRole}] Event: 'answer_received' from SID ${answererSid}`, answer);
+            const pc = peerConnections[answererSid];
+            if (pc) {
+                console.log(`[Teacher] Setting remote description with answer from ${answererSid}`);
+                try {
+                    await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                    console.log(`[Teacher] Remote description (answer) set for ${answererSid}. Connection should establish.`);
+                }
+                catch (error) { console.error("[Teacher] Error setting remote description from answer:", error); }
+            } else {
+                console.warn(`[Teacher] No PC found for SID ${answererSid} to set answer.`);
+            }
+        });
+
+        socket.on('ice_candidate_received', async (data) => {
+            const { candidate, sender_sid: candidateSenderSid } = data;
+            console.log(`[${currentUserRole}] Event: 'ice_candidate_received' from SID ${candidateSenderSid}`, candidate ? (candidate.candidate ? candidate.candidate.substring(0, 30) + "..." : "Candidate object without .candidate string") : "null candidate object");
+            const pc = peerConnections[candidateSenderSid];
+            if (pc && candidate) {
+                try {
+                    await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                    console.log(`[${currentUserRole}] Added ICE candidate from ${candidateSenderSid}`);
+                }
+                catch (error) { console.error(`[${currentUserRole}] Error adding received ICE candidate from ${candidateSenderSid}:`, error); }
+            } else if (pc && !candidate) {
+                console.log(`[${currentUserRole}] Received null ICE candidate (end of candidates signal) from ${candidateSenderSid}.`);
+            } else {
+                console.warn(`[${currentUserRole}] Could not add ICE candidate: PC not found for SID ${candidateSenderSid} or candidate object is null/invalid.`);
+            }
+        });
+
+        socket.on('user_left', (data) => {
+            addChatMessage(`${data.username} left the lecture.`);
+            console.log(`[${currentUserRole}] Event: 'user_left'. User: ${data.username} (SID: ${data.sid})`);
+            removePeerConnection(data.sid);
+        });
+
+        socket.on('lecture_ended', (data) => {
+            if (data.lecture_id === lectureId) {
+                addChatMessage("The lecture has been ended by the teacher.", "System");
+                alert("The lecture has been ended. Redirecting to dashboard.");
+                if (localStream) localStream.getTracks().forEach(track => track.stop());
+                for (const sid in peerConnections) if (peerConnections[sid]) peerConnections[sid].close();
+                peerConnections = {};
+                window.location.href = "{{ url_for('dashboard') }}";
+            }
+        });
+
+        // --- Screen Sharing Logic (Teacher Only) ---
+        if (currentUserRole === 'teacher' && toggleScreenShareBtn) {
+            toggleScreenShareBtn.addEventListener('click', async () => {
+                if (!isScreenSharing) {
+                    // Start screen sharing
+                    try {
+                        console.log("[Teacher] Attempting to start screen share...");
+                        screenStream = await navigator.mediaDevices.getDisplayMedia({
+                            video: { cursor: "always" },
+                            audio: false // Sharing screen audio can be complex, starting with video only
+                        });
+                        console.log("[Teacher] Screen share stream obtained:", screenStream);
+
+                        if (screenStream.getVideoTracks().length > 0) {
+                            const screenVideoTrack = screenStream.getVideoTracks()[0];
+
+                            // Store the original camera video track if it exists and is being sent
+                            if (localStream && localStream.getVideoTracks().length > 0) {
+                                originalVideoTrack = localStream.getVideoTracks()[0];
+                            } else {
+                                originalVideoTrack = null;
+                                // If no local camera stream was active, try to get it now to have something to revert to
+                                // This is a fallback, ideally localStream is already active
+                                if (!localStream) await startMedia();
+                                if (localStream && localStream.getVideoTracks().length > 0) {
+                                    originalVideoTrack = localStream.getVideoTracks()[0];
+                                }
+                            }
+
+                            localVideoEl.srcObject = screenStream; // Update local preview
+                            console.log("[Teacher] Local preview updated to screen share.");
+
+                            // Replace the video track for all connected peers
+                            for (const sid in peerConnections) {
+                                const pc = peerConnections[sid];
+                                const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+                                if (sender) {
+                                    console.log(`[Teacher] Replacing track for SID: ${sid} with screen share track.`);
+                                    await sender.replaceTrack(screenVideoTrack);
+                                } else {
+                                    console.warn(`[Teacher] No existing video sender for SID: ${sid}. Screen share might not send unless connection is renegotiated.`);
+                                    // Optionally, if no sender, you might try adding the track, but this often requires renegotiation (new offer/answer)
+                                    // pc.addTrack(screenVideoTrack, screenStream);
+                                }
+                            }
+
+                            // Handle when the user stops sharing via the browser's native UI
+                            screenVideoTrack.onended = () => {
+                                console.log("[Teacher] Screen share ended by browser UI (e.g., 'Stop sharing' button in browser).");
+                                stopScreenSharing(); // Call our function to clean up and revert
+                            };
+
+                            isScreenSharing = true;
+                            toggleScreenShareBtn.textContent = 'Stop Sharing Screen';
+                            toggleScreenShareBtn.classList.add('active-danger');
+                            if (toggleVideoBtn) toggleVideoBtn.disabled = true; // Disable camera toggle during screen share
+
+                        } else {
+                            console.warn("[Teacher] No video track found in screen share stream. Aborting screen share start.");
+                            if (screenStream) screenStream.getTracks().forEach(track => track.stop()); // Clean up the partial stream
+                            screenStream = null;
+                        }
+                    } catch (error) {
+                        console.error("[Teacher] Error starting screen share:", error);
+                        alert("Could not start screen sharing. Please ensure you grant permission and select a screen/window/tab.");
+                        if (screenStream) screenStream.getTracks().forEach(track => track.stop()); // Clean up if error occurred after getting stream
+                        screenStream = null;
+                    }
+                } else {
+                    // Stop screen sharing
+                    stopScreenSharing();
+                }
+            });
+
+            function stopScreenSharing() {
+                console.log("[Teacher] Attempting to stop screen share...");
+                if (screenStream) {
+                    screenStream.getTracks().forEach(track => track.stop());
+                    screenStream = null; // Clear the screen stream
+                }
+
+                // Determine which track to restore (original camera track or the current live camera track)
+                const trackToRestore = (originalVideoTrack && originalVideoTrack.readyState === 'live')
+                    ? originalVideoTrack
+                    : (localStream && localStream.getVideoTracks()[0] && localStream.getVideoTracks()[0].readyState === 'live'
+                        ? localStream.getVideoTracks()[0]
+                        : null);
+
+                if (trackToRestore) {
+                    localVideoEl.srcObject = localStream; // Revert local preview to camera stream
+                    console.log("[Teacher] Local preview reverted to camera.");
+                    for (const sid in peerConnections) {
+                        const pc = peerConnections[sid];
+                        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+                        if (sender) {
+                            console.log(`[Teacher] Replacing track for SID: ${sid} with camera track.`);
+                            sender.replaceTrack(trackToRestore).catch(err => console.error(`Error replacing track to camera for SID ${sid}:`, err));
+                        }
+                    }
+                } else {
+                    localVideoEl.srcObject = null; // No camera to show locally
+                    console.log("[Teacher] No live camera track to restore. Video sending might stop or be black.");
+                    for (const sid in peerConnections) { // Tell peers to stop receiving video
+                        const pc = peerConnections[sid];
+                        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+                        if (sender) {
+                            sender.replaceTrack(null).catch(err => console.error(`Error replacing with null track for SID ${sid}:`, err));
+                        }
+                    }
+                }
+
+                originalVideoTrack = null; // Clear the stored original track
+                isScreenSharing = false;
+                toggleScreenShareBtn.textContent = 'Share Screen';
+                toggleScreenShareBtn.classList.remove('active-danger');
+                if (toggleVideoBtn) toggleVideoBtn.disabled = false; // Re-enable camera toggle
+                console.log("[Teacher] Screen share stopped.");
+            }
+        }
+
+        // Apply dark mode from localStorage
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+</body>
+
+</html>

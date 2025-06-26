@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Take Test: {{ test.title }} | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <style>
+        .container { 
+            max-width: 800px; 
+            margin: 20px auto; 
+            padding: 20px; 
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-header { 
+            margin-bottom: 20px; 
+            padding-bottom: 10px; 
+            border-bottom: 1px solid #eee; 
+            text-align: center;
+        }
+        .test-header h2 { margin-bottom: 5px; }
+        .test-header p { margin: 5px 0; font-size: 0.9em; color: #555; }
+        .question-block { 
+            margin-bottom: 25px; 
+            padding: 20px; 
+            background-color: #f9f9f9; 
+            border-radius: 5px; 
+            border: 1px solid #ddd;
+        }
+        .question-text { 
+            font-weight: bold; 
+            margin-bottom: 15px; 
+            font-size: 1.1em; 
+            color: #333;
+        }
+        .question-image-container { 
+            margin-bottom: 15px; 
+            text-align: center; 
+        }
+        .question-image-container img {
+            max-width: 100%;
+            max-height: 400px; /* Adjust as needed */
+            height: auto;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .options label { 
+            display: block; 
+            margin-bottom: 10px; 
+            padding: 12px; 
+            border-radius: 4px; 
+            background-color: #fff; 
+            border: 1px solid #ddd; 
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .options input[type="radio"], 
+        .options input[type="text"] { 
+            margin-right: 10px; 
+            vertical-align: middle;
+        }
+        .options input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            width: calc(100% - 30px); 
+        }
+        .options label:hover { 
+            background-color: #e9f5ff; 
+            border-color: #a0cfff;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color, #007bff);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .submit-btn:hover { 
+            background-color: var(--primary-color-dark, #0056b3);
+        }
+        /* Dark Mode Styles */
+        body.dark-mode .container { background-color: #2d2d2d; color: #f0f0f0; }
+        body.dark-mode .test-header { border-bottom-color: #444; }
+        body.dark-mode .test-header p { color: #bbb; }
+        body.dark-mode .question-block { background-color: #3a3a3a; border-color: #555; }
+        body.dark-mode .question-text { color: #f0f0f0; }
+        body.dark-mode .question-image-container img { border-color: #666; }
+        body.dark-mode .options label { background-color: #4a4a4a; border-color: #666; color: #f0f0f0; }
+        body.dark-mode .options label:hover { background-color: #5a5a5a; border-color: #777; }
+        body.dark-mode .options input[type="text"] { background-color: #505050; color: #f0f0f0; border-color: #666;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="test-header">
+            <h2>{{ test.title }}</h2>
+            <p><strong>Subject:</strong> {{ test.subject }} | <strong>Semester:</strong> {{ test.semester }}</p>
+            <p>Please answer all questions to the best of your ability.</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('take_test_page', test_id=test.id) }}">
+            {% for question in questions %}
+            <div class="question-block">
+                <p class="question-text">{{ loop.index }}. {{ question.question_text | safe }}</p>
+                
+                <!-- ***** CORRECTED/VERIFIED IMAGE DISPLAY LOGIC ***** -->
+                {% if question.image_filename %}
+                    <div class="question-image-container">
+                        <img src="{{ url_for('serve_upload', filename=question.image_filename) }}" 
+                             alt="Question Image for question {{ loop.index }}">
+                    </div>
+                {% endif %}
+                <!-- ***** END OF IMAGE DISPLAY LOGIC ***** -->
+
+                <div class="options">
+                    {% set q_type = question.question_type | default('', true) | lower %}
+
+                    {% if q_type == 'mcq' %}
+                        <label>
+                            <input type="radio" name="question_{{ question.id }}" value="A" required> A) {{ question.option_a }}
+                        </label>
+                        <label>
+                            <input type="radio" name="question_{{ question.id }}" value="B"> B) {{ question.option_b }}
+                        </label>
+                        <label>
+                            <input type="radio" name="question_{{ question.id }}" value="C"> C) {{ question.option_c }}
+                        </label>
+                        <label>
+                            <input type="radio" name="question_{{ question.id }}" value="D"> D) {{ question.option_d }}
+                        </label>
+                    {% elif q_type == 'fill_blank' %}
+                        <label for="question_{{ question.id }}_answer">Your Answer:</label>
+                        <input type="text" id="question_{{ question.id }}_answer" name="question_{{ question.id }}" class="form-control" required placeholder="Type your answer here">
+                    {% elif q_type == 'true_false' %}
+                        <label>
+                            <input type="radio" name="question_{{ question.id }}" value="True" required> True
+                        </label>
+                        <label>
+                            <input type="radio" name="question_{{ question.id }}" value="False"> False
+                        </label>
+                    {% else %}
+                        <p><em>Error: Unknown question type ('{{ question.question_type }}'). Please contact your teacher.</em></p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            <button type="submit" class="submit-btn">Submit Test</button>
+        </form>
+
+        <br>
+        <a href="{{ url_for('dashboard') }}" class="btn" style="display: inline-block; margin-top:10px; text-decoration: none; padding: 8px 15px; background-color: #6c757d; color: white; border-radius: 4px;">&laquo; Back to Dashboard (Cancel)</a>
+    </div>
+
+    <script>
+        // Dark mode persistence
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+</body>
+</html>

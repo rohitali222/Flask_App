@@ -1,0 +1,9 @@
+<h2>Available Tests</h2>
+<ul>
+  {% for test in tests %}
+    <li>
+      <strong>{{ test.title }}</strong> ({{ test.subject }})
+      <a href="/take-test/{{ test.id }}">Take Test</a>
+    </li>
+  {% endfor %}
+</ul>

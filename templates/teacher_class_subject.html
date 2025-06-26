@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ subject_name }} - Semester {{ semester }} | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <!-- You might want to create a specific CSS file for this page or add styles here -->
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .page-header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .page-header h1 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.8em;
+        }
+        .back-link {
+            padding: 8px 15px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .back-link:hover {
+            background-color: #2980b9;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #34495e;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        .item-list {
+            list-style: none;
+            padding: 0;
+        }
+        .item-list li {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .item-list li h4 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: #2980b9;
+        }
+        .item-list p {
+            font-size: 0.95em;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        .item-list .meta {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+        .item-list .actions a {
+            margin-right: 10px;
+            text-decoration: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .download-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .download-btn:hover {
+            background-color: #27ae60;
+        }
+        .submissions-btn {
+            background-color: #e67e22;
+            color: white;
+        }
+        .submissions-btn:hover {
+            background-color: #d35400;
+        }
+        .no-content {
+            padding: 15px;
+            background-color: #ecf0f1;
+            border: 1px dashed #bdc3c7;
+            border-radius: 5px;
+            text-align: center;
+            color: #7f8c8d;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #ecf0f1;
+            color: #34495e;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>{{ subject_name }} <small>(Semester {{ semester }})</small></h1>
+            <a href="{{ url_for('dashboard') }}" class="back-link">Back to Dashboard</a>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages-container" style="margin-bottom: 20px;">
+              {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}" role="alert" style="padding: 10px 15px; border: 1px solid transparent; border-radius: 4px; color: #fff; background-color: {{ '#2ecc71' if category == 'success' else ('#e74c3c' if category == 'error' else ('#f39c12' if category == 'warning' else '#3498db')) }};">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <section class="section">
+            <h2>👥 Enrolled Students</h2>
+            {% if enrolled_students %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Roll Number</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in enrolled_students %}
+                        <tr>
+                            <td>{{ student.username }}</td>
+                            <td>{{ student.roll_number if student.roll_number else 'N/A' }}</td>
+                            <td>{{ student.email if student.email else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="no-content">No students are currently enrolled in this subject for this semester, or their subject list does not match.</p>
+            {% endif %}
+        </section>
+
+        <section class="section">
+            <h2>📚 Course Materials</h2>
+            {% if materials %}
+                <ul class="item-list">
+                    {% for material in materials %}
+                    <li>
+                        <h4>{{ material.title }}</h4>
+                        {% if material.description %}
+                            <p>{{ material.description }}</p>
+                        {% endif %}
+                        <p class="meta">Type: {{ material.type|title }} | Uploaded: {{ material.upload_date.strftime('%Y-%m-%d %H:%M') if material.upload_date else 'N/A' }}</p>
+                        <div class="actions">
+                            <a href="{{ material.file_url }}" class="download-btn" download>Download</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="no-content">No materials uploaded for this subject in this semester yet.</p>
+            {% endif %}
+        </section>
+
+        <section class="section">
+            <h2>📝 Assignments</h2>
+            {% if assignments %}
+                <ul class="item-list">
+                    {% for assignment in assignments %}
+                    <li>
+                        <h4>{{ assignment.title }}</h4>
+                        {% if assignment.description %}
+                            <p>{{ assignment.description }}</p>
+                        {% endif %}
+                        <p class="meta">Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }} | Uploaded: {{ assignment.upload_date.strftime('%Y-%m-%d %H:%M') if assignment.upload_date else 'N/A' }}</p>
+                        <div class="actions">
+                            <a href="{{ assignment.file_url }}" class="download-btn" download>Download Assignment</a>
+                            <a href="{{ assignment.view_submissions_url }}" class="submissions-btn">View Submissions</a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="no-content">No assignments uploaded for this subject in this semester yet.</p>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>

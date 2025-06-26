@@ -1,0 +1,47 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="admin-users">
+    <h2>👥 User Management</h2>
+    
+    <table class="user-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Joined</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.role }}</td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                <td class="actions">
+                    <a href="#" class="edit-btn">✏️ Edit</a>
+                    <a href="#" class="delete-btn">🗑️ Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="pagination">
+        {% if pagination.page > 1 %}
+            <a href="?page={{ pagination.page-1 }}">⬅️ Previous</a>
+        {% endif %}
+        
+        <span>Page {{ pagination.page }} of {{ pagination.pages }}</span>
+        
+        {% if pagination.page < pagination.pages %}
+            <a href="?page={{ pagination.page+1 }}">Next ➡️</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

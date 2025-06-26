@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Results: {{ attempt.test_title }} | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 25px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .page-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .page-header h2 { font-size: 2rem; margin-bottom: 8px; color: #343a40; }
+        .page-header p { font-size: 1rem; color: #6c757d; margin-bottom: 5px; }
+
+        .summary-card {
+            background-color: #e9ecef; /* Light gray for summary */
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .summary-card h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            color: #495057;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .summary-item p { margin: 5px 0; font-size: 1rem; }
+        .summary-item strong { color: #343a40; }
+
+        .questions-header {
+            font-size: 1.5rem;
+            color: #343a40;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .question-review-item {
+            background-color: #fdfdff;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .question-review-item .question-text {
+            font-weight: 500; /* Medium weight */
+            font-size: 1.1rem;
+            color: #343a40;
+            margin-bottom: 12px;
+        }
+        .question-meta small { font-size: 0.85em; color: #6c757d; display: block; margin-bottom: 10px; }
+        .image-container { text-align: center; margin-bottom: 15px; }
+        .image-container img {
+            max-width: 100%;
+            max-height: 300px; /* Max height for images */
+            height: auto;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        .answer-details p { margin: 8px 0; font-size: 0.95em; }
+        .badge {
+            display: inline-block;
+            padding: .35em .65em;
+            font-size: .75em;
+            font-weight: 700;
+            line-height: 1;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: .25rem;
+        }
+        .bg-success { background-color: #198754 !important; } /* Bootstrap success green */
+        .bg-danger { background-color: #dc3545 !important; } /* Bootstrap danger red */
+        .text-white { color: #fff !important; }
+
+        .explanation-section { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ced4da; }
+        .explanation-section h5 { font-size: 1.05rem; margin-bottom: 8px; color: #495057; }
+        .explanation-content { font-size: 0.95em; line-height: 1.6; color: #495057; }
+        .explanation-content pre[class*="language-"] { background: #282c34; border: 1px solid #3e4451; }
+        .explanation-content code[class*="language-"] { font-size: 0.9em; }
+
+        .actions-bar { margin-top: 30px; text-align: center; }
+        .btn { /* Using styles from dashboard.css if linked */
+            display: inline-block; font-weight: 400; line-height: 1.5; color: #fff;
+            text-align: center; text-decoration: none; vertical-align: middle; cursor: pointer;
+            user-select: none; background-color: #0d6efd; border: 1px solid #0d6efd;
+            padding: .5rem 1rem; font-size: 1rem; border-radius: .25rem;
+            transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+            margin: 5px;
+        }
+        .btn:hover { background-color: #0b5ed7; border-color: #0a58ca; }
+        .btn-info { background-color: #0dcaf0; border-color: #0dcaf0; }
+        .btn-info:hover { background-color: #31d2f2; border-color: #25cff2; }
+        .btn-warning { background-color: #ffc107; border-color: #ffc107; color: #000; }
+        .btn-warning:hover { background-color: #ffca2c; border-color: #ffc720; }
+
+        /* Dark Mode Styles */
+        body.dark-mode { background-color: #212529; color: #dee2e6; }
+        body.dark-mode .container { background-color: #2b3035; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        body.dark-mode .page-header { border-bottom-color: #495057; }
+        body.dark-mode .page-header h2 { color: #f8f9fa; }
+        body.dark-mode .page-header p { color: #adb5bd; }
+        body.dark-mode .summary-card { background-color: #343a40; }
+        body.dark-mode .summary-card h3 { color: #f8f9fa; }
+        body.dark-mode .summary-item strong { color: #f8f9fa; }
+        body.dark-mode .questions-header { color: #f8f9fa; border-bottom-color: #495057; }
+        body.dark-mode .question-review-item { background-color: #343a40; border-color: #495057; }
+        body.dark-mode .question-review-item .question-text { color: #f8f9fa; }
+        body.dark-mode .question-meta small { color: #adb5bd; }
+        body.dark-mode .image-container img { border-color: #495057; }
+        body.dark-mode .explanation-section { border-top-color: #495057; }
+        body.dark-mode .explanation-section h5 { color: #ced4da; }
+        body.dark-mode .explanation-content { color: #ced4da; }
+        body.dark-mode .explanation-content pre[class*="language-"] { background: #212529; border-color: #495057; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2>Test Attempt Results</h2>
+            <p><strong>Test:</strong> {{ attempt.test_title }}</p>
+            <p><strong>Student:</strong> {{ attempt.student_name }} (Roll: {{ attempt.roll_number | default('N/A') }})</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="summary-card">
+            <h3>Performance Summary</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <p><strong>Score:</strong> {{ attempt.score | default('N/A') }} / {{ attempt.total_marks_possible | default(attempt.actual_test_total_marks | default(attempt.num_questions_in_attempt | default('N/A'))) }}</p>
+                </div>
+                <div class="summary-item">
+                    <p><strong>Percentage:</strong> {{ "%.2f"|format(attempt.percentage) ~ '%' if attempt.percentage is not none else 'N/A' }}</p>
+                </div>
+                <div class="summary-item">
+                    <p><strong>Level Achieved:</strong> {{ attempt.level_display | default('N/A') }}</p>
+                </div>
+                <div class="summary-item">
+                    <p><strong>Rank:</strong> {{ rank | default('N/A') }} out of {{ total_participants | default('N/A') }}</p>
+                </div>
+                <div class="summary-item">
+                    <p><strong>Attempted:</strong> {{ attempt.started_at.strftime('%d %b %Y, %I:%M %p') if attempt.started_at else 'N/A' }}</p>
+                </div>
+                <div class="summary-item">
+                    <p><strong>Completed:</strong> {{ attempt.completed_at.strftime('%d %b %Y, %I:%M %p') if attempt.completed_at else 'N/A' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="questions-header">Question-wise Review</h3>
+        {% if questions_with_answers %}
+            {% for qa_item in questions_with_answers %}
+            <div class="question-review-item">
+                <p class="question-text"><strong>Question {{ loop.index }}:</strong> {{ qa_item.question_text | safe }}</p>
+                <div class="question-meta">
+                    <small>
+                        <strong>Topic:</strong> {{ qa_item.topic | default('N/A') }} | 
+                        <strong>Type:</strong> {{ qa_item.question_type | title | default('N/A') }} |
+                        <strong>Marks:</strong> {{ qa_item.question_marks | default('1') }}
+                    </small>
+                </div>
+
+                <!-- Corrected Image Display -->
+                {% if qa_item.image_filename %}
+                    <div class="image-container">
+                        <img src="{{ url_for('serve_upload', filename=qa_item.image_filename) }}" 
+                             alt="Question Image for question {{ loop.index }}">
+                    </div>
+                {% endif %}
+                
+                <div class="answer-details">
+                    <p><strong>Your Answer:</strong> 
+                        {{ qa_item.selected_option_text if qa_item.selected_option_text is not none else "Not Answered" }}
+                        {% if qa_item.is_correct %}
+                            <span class="badge bg-success text-white">Correct</span>
+                        {% else %}
+                            <span class="badge bg-danger text-white">Incorrect</span>
+                        {% endif %}
+                    </p>
+                    {% if not qa_item.is_correct %}
+                        <p><strong>Correct Answer:</strong> {{ qa_item.correct_option_text | default('N/A') }}</p>
+                    {% endif %}
+                    <p><small>Marks Awarded: {{ qa_item.marks_awarded if qa_item.marks_awarded is not none else '0' }} / {{ qa_item.question_marks | default('1') }}</small></p>
+                </div>
+                
+            
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No detailed question answers found for this attempt.</p>
+        {% endif %}
+
+        <div class="actions-bar">
+            <a href="{{ url_for('dashboard') }}" class="btn">&laquo; Back to Dashboard</a>
+            <a href="{{ url_for('view_test_review_with_explanations', test_id=attempt.test_id) }}" class="btn btn-info">Review All Questions & Explanations</a>
+            <a href="{{ url_for('download_report_card', attempt_id=attempt.attempt_id) }}" class="btn btn-warning">Download Report Card (PDF)</a>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script>
+        // Dark mode persistence
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+        // Trigger Prism highlighting
+        document.addEventListener('DOMContentLoaded', (event) => {
+            Prism.highlightAll();
+        });
+    </script>
+</body>
+</html>

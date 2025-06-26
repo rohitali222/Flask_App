@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Results for {{ test.title }} | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <style>
+        .container { max-width: 900px; margin: 20px auto; padding: 20px; }
+        .page-header { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .results-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .results-table th, .results-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .results-table th { background-color: #f0f0f0; }
+        .no-results { text-align: center; padding: 20px; background-color: #f9f9f9; border-radius: 5px; }
+
+        /* Styling for levels */
+        .level-novice { color: #dc3545; font-weight: bold; } /* Red */
+        .level-intermediate { color: #ffc107; font-weight: bold; } /* Yellow/Orange */
+        .level-advance { color: #28a745; font-weight: bold; } /* Green */
+        .level-na, .level-na-invalid-percentage { color: #6c757d; } /* Grey for N/A and N/A (Invalid %) */
+
+
+        body.dark-mode .page-header { border-bottom-color: #444; }
+        body.dark-mode .results-table th { background-color: #3a3a3a; }
+        body.dark-mode .results-table td { border-color: #444; }
+        body.dark-mode .no-results { background-color: #2d2d2d; }
+        
+        body.dark-mode .level-novice { color: #f87171; } 
+        body.dark-mode .level-intermediate { color: #facc15; } 
+        body.dark-mode .level-advance { color: #4ade80; } 
+        body.dark-mode .level-na, body.dark-mode .level-na-invalid-percentage { color: #9ca3af; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h2>Test Results: {{ test.title }}</h2>
+            <p><strong>Subject:</strong> {{ test.subject }} | <strong>Semester:</strong> {{ test.semester }}</p>
+            <p><strong>Test Type:</strong> {{ test.test_type|title if test.test_type else 'N/A' }}</p>
+            {% if test.due_date %}
+            <p><strong>Due Date:</strong> {{ test.due_date.strftime('%Y-%m-%d %H:%M') }}</p>
+            {% endif %}
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if attempts %}
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Student Name</th>
+                        <th>Score</th>
+                        <th>Total Questions</th>
+                        <th>Percentage</th>
+                        <th>Level</th> 
+                        <th>Attempted At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in attempts %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ attempt.student_name }}</td>
+                        <td>{{ attempt.score }}</td>
+                        <td>{{ attempt.total_questions }}</td>
+                        <td>
+                            {% if attempt.percentage is not none %}
+                                {{ "%.2f"|format(attempt.percentage) }}%
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td class="level-{{ attempt.level | lower | replace(' ', '-') | replace('(', '') | replace(')', '') | replace('%', '') if attempt.level else 'na' }}">
+                            {{ attempt.level | default('N/A') }}
+                        </td>
+                        <td>{{ attempt.attempted_at.strftime('%Y-%m-%d %H:%M:%S') if attempt.attempted_at else 'N/A' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="no-results">No attempts found for this test yet.</p>
+        {% endif %}
+        <br>
+        <a href="{{ url_for('dashboard') }}" class="btn">&laquo; Back to Dashboard</a>
+    </div>
+
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+</body>
+</html>

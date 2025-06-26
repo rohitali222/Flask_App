@@ -1,0 +1,74 @@
+<!-- templates/view_submissions.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Submissions for {{ assignment.title }} | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> {# Link to your main CSS or create a new one #}
+    <style>
+        /* Basic styling for the submissions view */
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 800px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; margin-bottom: 20px; }
+        .assignment-info { margin-bottom: 20px; padding: 15px; background-color: #e9e9e9; border-left: 4px solid #007bff; }
+        .submissions-list { list-style: none; padding: 0; }
+        .submission-item { background: #f9f9f9; border: 1px solid #ddd; margin-bottom: 10px; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .submission-details { flex-grow: 1; margin-right: 15px; }
+        .submission-details strong { display: inline-block; min-width: 100px; }
+        .submission-actions a { background: #28a745; color: #fff; padding: 5px 10px; text-decoration: none; border-radius: 4px; margin-left: 5px; }
+        .submission-actions a:hover { background: #218838; }
+         .flash-messages { list-style: none; padding: 0; margin-bottom: 20px; }
+        .flash-messages li { padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+        .flash-messages .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash-messages .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+         .no-submissions { text-align: center; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Submissions for "{{ assignment.title }}"</h2>
+
+         {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <div class="assignment-info">
+            <p><strong>Subject:</strong> {{ assignment.subject }}</p>
+            <p><strong>Semester:</strong> {{ assignment.semester }}</p>
+            <p><strong>Due Date:</strong> {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }}</p>
+        </div>
+
+        <h3>Submissions ({{ submissions|length }})</h3>
+
+        {% if submissions %}
+            <ul class="submissions-list">
+                {% for submission in submissions %}
+                    <li class="submission-item">
+                        <div class="submission-details">
+                            <p><strong>Student:</strong> {{ submission.student_name }} (Roll No: {{ submission.student_roll_number }})</p>
+
+                            <p><strong>Submitted On:</strong> {{ submission.upload_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>File:</strong> {{ submission.filename.split('/')[-1] }}</p> {# Display just the filename #}
+                        </div>
+                        <div class="submission-actions">
+                            <a href="{{ submission.file_url }}" download>Download</a>
+                            {# Add links/buttons for grading/feedback later if needed #}
+                            {# <a href="#">Grade</a> #}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="no-submissions">No submissions received yet for this assignment.</p>
+        {% endif %}
+
+        <p><a href="/dashboard">Back to Dashboard</a></p>
+    </div>
+</body>
+</html>

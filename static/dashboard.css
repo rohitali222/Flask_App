@@ -1,0 +1,1091 @@
+/* dashboard.css - Main Stylesheet for Smart Tutoring System */
+
+/* Base Styles */
+:root {
+  --primary-color: #3498db;
+  --secondary-color: #2ecc71;
+  --accent-color: #e74c3c;
+  --dark-color: #2c3e50;
+  --light-color: #ecf0f1;
+  --text-color: #333;
+  --text-light: #7f8c8d;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: var(--text-color);
+  background-color: #f5f7fa;
+  padding: 0;
+  margin: 0;
+}
+
+/* Dark Mode Styles */
+body.dark-mode {
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+}
+
+body.dark-mode .dashboard-card,
+body.dark-mode .profile-card,
+body.dark-mode .subject-card, /* Added subject-card */
+body.dark-mode .material-card, /* Added material-card */
+body.dark-mode .assignment-card, /* Added assignment-card */
+body.dark-mode .test-card, /* test-card was already here but good to confirm */
+body.dark-mode .content-section, /* Added content-section */
+body.dark-mode .materials-section { /* materials-section was legacy, content-section is preferred */
+  background-color: #2d2d2d;
+  color: #f0f0f0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode .dashboard-card h3,
+body.dark-mode .profile-card h3,
+body.dark-mode .subject-card-header h4, /* More specific for subject card */
+body.dark-mode .material-card .material-header h4, /* More specific */
+body.dark-mode .assignment-card .assignment-header h4, /* More specific */
+body.dark-mode .test-card .test-header h4, /* More specific */
+body.dark-mode .content-section h3, /* Added for content-section */
+body.dark-mode .materials-section h3 {
+  color: #ffffff;
+}
+
+/* Layout */
+.dashboard-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e0e0e0;
+}
+body.dark-mode .dashboard-header {
+    border-bottom-color: #444;
+}
+
+
+.dashboard-header h2 {
+  color: var(--dark-color);
+  font-size: 28px;
+}
+body.dark-mode .dashboard-header h2 {
+  color: var(--light-color);
+}
+
+
+/* Navigation */
+.main-navigation {
+  background-color: var(--dark-color);
+  padding: 15px 0;
+  margin-bottom: 30px;
+  box-shadow: var(--box-shadow);
+}
+
+.main-navigation ul {
+  display: flex;
+  justify-content: center;
+  list-style: none;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.main-navigation li {
+  margin: 0 15px;
+}
+
+.main-navigation a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 15px;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.main-navigation a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.main-navigation a.active {
+  background-color: var(--primary-color);
+}
+
+/* Content Sections (for student dashboard) */
+.content-section {
+  background-color: white;
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 30px;
+  margin-top: 20px;
+  box-shadow: var(--box-shadow);
+}
+
+.content-section h3 { /* Main heading of a content section */
+  color: var(--dark-color);
+  margin-bottom: 20px;
+  margin-top: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--light-color);
+  font-size: 1.5rem;
+}
+body.dark-mode .content-section h3 {
+  border-bottom-color: #444;
+}
+
+
+/* Cards */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.dashboard-card {
+  background-color: white;
+  border-radius: var(--border-radius);
+  padding: 20px;
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+  /* Removed individual hover, will use common hover style */
+}
+
+.dashboard-card h3 {
+  color: var(--dark-color);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--light-color);
+}
+body.dark-mode .dashboard-card h3 {
+    border-bottom-color: #444;
+}
+
+.card-note {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+body.dark-mode .card-note {
+    color: #a0a0a0;
+}
+
+/* Unified Card Hover Effects */
+.dashboard-card:hover,
+.profile-card:hover, /* Assuming profile-card is similar */
+.subject-card:hover,
+.material-card:hover,
+.assignment-card:hover,
+.test-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.12);
+}
+
+body.dark-mode .dashboard-card:hover,
+body.dark-mode .profile-card:hover,
+body.dark-mode .subject-card:hover,
+body.dark-mode .material-card:hover,
+body.dark-mode .assignment-card:hover,
+body.dark-mode .test-card:hover {
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.35); /* Darker shadow for dark mode */
+}
+
+
+/* Profile Card (ensure it aligns with general card styling) */
+.profile-card {
+  background-color: white;
+  border-radius: var(--border-radius);
+  padding: 20px; /* Consistent with dashboard-card */
+  margin-bottom: 20px;
+  box-shadow: var(--box-shadow);
+  /* Removed individual hover, uses common hover style */
+}
+
+.profile-card h3 {
+  color: var(--dark-color);
+  margin-bottom: 15px;
+  padding-bottom: 10px; /* Optional: add border like dashboard-card h3 */
+  border-bottom: 2px solid var(--light-color); /* Making it consistent */
+}
+body.dark-mode .profile-card h3 {
+    border-bottom-color: #444;
+}
+
+.profile-card ul {
+  list-style: none;
+}
+
+.profile-card li {
+  margin-bottom: 8px;
+  display: flex;
+}
+
+.profile-card li strong {
+  min-width: 100px;
+  display: inline-block;
+  color: var(--dark-color);
+}
+body.dark-mode .profile-card li strong {
+    color: var(--light-color);
+}
+
+
+/* Subject Grid and Cards (Student and Teacher) */
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.subject-card {
+  background-color: white;
+  border-radius: var(--border-radius);
+  padding: 15px;
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+  display: flex; /* For footer alignment */
+  flex-direction: column; /* For footer alignment */
+  /* Removed individual hover, uses common hover style */
+}
+
+.subject-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.subject-card-header h4 {
+  color: var(--dark-color);
+  font-size: 1.1rem;
+}
+/* Dark mode for h4 already covered by general rule */
+
+.subject-code {
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+body.dark-mode .subject-code {
+    color: #a0a0a0;
+}
+
+.subject-card-body {
+  padding: 5px 0; /* Reduced padding as actions have their own */
+  font-size: 0.9rem;
+  color: var(--text-color);
+  flex-grow: 1; /* Allows footer to stick to bottom */
+}
+body.dark-mode .subject-card-body {
+  color: #e0e0e0;
+} /* Closing for .subject-card-body from previous part */
+
+.subject-stats { /* For teacher's subject card, if still used */
+  display: flex;
+  justify-content: space-between;
+  margin: 15px 0;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+body.dark-mode .stat-label {
+    color: #a0a0a0;
+}
+
+.subject-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 15px; /* Ensure space above actions */
+}
+
+.subject-action-btn {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f0f0f0; /* Lighter than light-color for subtle difference */
+  color: var(--text-color);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: var(--transition);
+  font-size: 0.9rem;
+}
+body.dark-mode .subject-action-btn {
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+}
+
+.subject-action-btn:hover {
+  background-color: var(--light-color);
+  color: var(--primary-color);
+}
+body.dark-mode .subject-action-btn:hover {
+    background-color: #4a4a4a;
+    color: var(--primary-color);
+}
+
+.subject-action-btn .icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
+}
+
+.subject-card-footer {
+  margin-top: auto; /* Pushes footer to the bottom of the card */
+  padding-top: 10px;
+  border-top: 1px solid var(--light-color);
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+body.dark-mode .subject-card-footer {
+    border-top-color: #444;
+    color: #a0a0a0;
+}
+
+.last-activity { /* For teacher's subject card footer */
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  text-align: right;
+}
+body.dark-mode .last-activity {
+    color: #a0a0a0;
+}
+
+/* Student Dashboard: Materials & Assignments by Subject Section */
+.subject-group { /* Container for one subject's materials and assignments */
+  margin-bottom: 2.5rem; /* Increased spacing between subject groups */
+}
+
+.subject-heading { /* e.g., "Data Structures" */
+  font-size: 1.4rem; /* Slightly larger */
+  font-weight: 600; /* Bolder */
+  margin-bottom: 1rem;
+  color: var(--dark-color);
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 0.5rem;
+}
+body.dark-mode .subject-heading {
+  color: var(--light-color);
+  border-bottom-color: #555;
+}
+
+.subject-content-row { /* Holds material and assignment columns */
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+.material-column, .assignment-column {
+  flex: 1; /* Each column takes equal space */
+  min-width: 300px; /* Minimum width before wrapping */
+  /* Removed inline styles, handled by CSS */
+}
+
+.material-column h5, .assignment-column h5 { /* Sub-headings like "📚 Materials" */
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--dark-color);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px dashed var(--light-color);
+}
+body.dark-mode .material-column h5, body.dark-mode .assignment-column h5 {
+  color: var(--light-color);
+  border-bottom-color: #444;
+}
+
+/* Grids for Materials and Assignments */
+.material-grid, .assignment-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Default to single column for items */
+  gap: 15px; /* Space between cards in the grid */
+}
+
+/* Material and Assignment Cards */
+.material-card, .assignment-card {
+  background-color: #ffffff; /* Slightly off-white for cards within sections */
+  border-radius: var(--border-radius);
+  padding: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.07); /* Softer shadow for nested cards */
+  transition: var(--transition);
+  /* Removed individual hover, uses common hover style */
+}
+body.dark-mode .material-card, body.dark-mode .assignment-card {
+    background-color: #333; /* Darker than section background */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+}
+
+
+.material-header, .assignment-header {
+  margin-bottom: 10px;
+}
+
+.material-header h4, .assignment-header h4 {
+  font-size: 1rem;
+  color: var(--dark-color);
+  margin: 0;
+}
+/* Dark mode for h4 already covered */
+
+.material-meta, .assignment-meta {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}
+.material-meta span, .assignment-meta span {
+  display: block;
+  margin-bottom: 3px;
+}
+body.dark-mode .material-meta, body.dark-mode .assignment-meta {
+    color: #a0a0a0;
+}
+
+.material-actions, .assignment-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.assignment-card.past-due {
+  border-left: 4px solid var(--accent-color);
+  opacity: 0.85;
+}
+body.dark-mode .assignment-card.past-due {
+    opacity: 0.7;
+}
+
+
+/* Download and Submit Buttons (General Button Styling) */
+.btn, /* Generic button class */
+.download-btn,
+.submit-btn,
+.take-test-btn,
+.view-submissions-link, /* Can also be styled as a button */
+.upload-button, .test-button, .evaluate-button, .action-btn {
+  display: inline-block;
+  padding: 8px 15px; /* Standardized padding */
+  background-color: var(--primary-color);
+  color: white !important; /* Ensure text is white */
+  text-decoration: none !important; /* Remove underline from links styled as buttons */
+  border: none;
+  border-radius: 4px; /* Slightly less rounded than cards */
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.btn:hover,
+.download-btn:hover,
+.submit-btn:hover,
+.take-test-btn:hover,
+.view-submissions-link:hover,
+.upload-button:hover, .test-button:hover, .evaluate-button:hover, .action-btn:hover {
+  background-color: #2980b9; /* Darker shade of primary */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Specific button variations */
+.submit-btn { /* For submitting assignments */
+  background-color: var(--secondary-color);
+}
+.submit-btn:hover {
+  background-color: #27ae60; /* Darker secondary */
+}
+
+.view-submissions-link { /* If it's a link but should look like a button */
+    background-color: var(--secondary-color); /* Example: green for view/positive action */
+}
+.view-submissions-link:hover {
+    background-color: #27ae60;
+}
+body.dark-mode .view-submissions-link {
+    background-color: var(--secondary-color); /* Keep color for dark mode */
+}
+body.dark-mode .view-submissions-link:hover {
+    background-color: #27ae60;
+}
+
+
+.no-content, .no-subjects, .no-assignments { /* For empty states */
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: var(--border-radius);
+  text-align: center;
+  color: var(--text-light);
+  margin-top: 10px; /* Add some margin */
+}
+body.dark-mode .no-content, body.dark-mode .no-subjects, body.dark-mode .no-assignments {
+    background-color: #252525;
+    color: #a0a0a0;
+}
+
+.warning {
+  color: var(--accent-color);
+  font-weight: 500;
+}
+
+/* Teacher Dashboard: Semester Tabs */
+.semester-tabs-container {
+  margin-bottom: 25px;
+  background-color: white;
+  border-radius: var(--border-radius);
+  padding: 15px;
+  box-shadow: var(--box-shadow);
+}
+body.dark-mode .semester-tabs-container {
+    background-color: #2d2d2d;
+}
+
+.semester-tabs {
+  display: flex;
+  overflow-x: auto; /* Allow horizontal scrolling for many tabs */
+  padding-bottom: 5px; /* Space for scrollbar */
+  margin-bottom: 20px; /* Space below tabs before content */
+  border-bottom: 1px solid #ddd;
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: var(--primary-color) var(--light-color); /* For Firefox */
+}
+body.dark-mode .semester-tabs {
+    border-bottom-color: #444;
+}
+
+.semester-tabs::-webkit-scrollbar { /* For Chrome, Safari, Edge */
+  height: 6px;
+}
+.semester-tabs::-webkit-scrollbar-track {
+  background: var(--light-color);
+  border-radius: 3px;
+}
+body.dark-mode .semester-tabs::-webkit-scrollbar-track {
+  background: #444;
+}
+.semester-tabs::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color);
+  border-radius: 3px;
+}
+
+.tab-button {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem; /* Slightly larger */
+  color: var(--text-light);
+  position: relative;
+  transition: var(--transition);
+  white-space: nowrap; /* Prevent tabs from breaking line */
+  flex-shrink: 0; /* Prevent tabs from shrinking */
+}
+body.dark-mode .tab-button {
+    color: #a0a0a0;
+}
+
+.tab-button.active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; /* Align with the border-bottom of .semester-tabs */
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--primary-color);
+}
+
+.semester-panel {
+  display: none; /* Hidden by default */
+}
+.semester-panel.active-panel {
+  display: block; /* Show active panel */
+  animation: fadeInPanel 0.5s ease-in-out; /* Add a subtle fade-in */
+}
+
+@keyframes fadeInPanel {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* Test Grid and Cards (Student and Teacher) */
+.test-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px; /* Consistent margin */
+}
+
+.test-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: var(--box-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between elements inside the card */
+    transition: var(--transition);
+    /* Removed individual hover, uses common hover style */
+}
+
+.test-card.past-due {
+    border-left: 4px solid var(--accent-color);
+    opacity: 0.8; /* Slightly more opaque than assignment */
+}
+body.dark-mode .test-card.past-due {
+    opacity: 0.7;
+}
+
+.test-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0; /* Gap handles spacing */
+}
+
+.test-header h4 {
+    margin-bottom: 0;
+    font-size: 1.15rem; /* Consistent with subject card */
+    color: var(--dark-color);
+}
+/* Dark mode for h4 already covered */
+
+.test-type { /* Pill style for test type */
+    padding: 4px 12px; /* More padding for pill */
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: 500;
+    text-transform: capitalize;
+    /* Background and color set inline in HTML based on type, which is fine for dynamic styling */
+}
+
+.test-details span {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+body.dark-mode .test-details span {
+    color: #a0a0a0;
+}
+.test-details span strong {
+    color: var(--dark-color);
+    font-weight: 600;
+}
+body.dark-mode .test-details span strong {
+    color: var(--light-color);
+}
+
+.test-actions {
+    margin-top: auto; /* Push to bottom of card */
+    padding-top: 15px;
+    border-top: 1px solid var(--light-color);
+    display: flex;
+    gap: 10px;
+}
+body.dark-mode .test-actions {
+    border-top-color: #444;
+}
+/* .take-test-btn already styled by .btn */
+
+
+/* Forms (General Styling) */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: var(--dark-color);
+}
+body.dark-mode .form-group label {
+    color: var(--light-color);
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="date"],
+.form-group input[type="datetime-local"],
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc; /* Slightly darker border */
+  border-radius: var(--border-radius);
+  font-family: inherit;
+  font-size: 0.95rem;
+  background-color: #fff;
+  color: var(--text-color);
+}
+body.dark-mode .form-group input[type="text"],
+body.dark-mode .form-group input[type="email"],
+body.dark-mode .form-group input[type="password"],
+body.dark-mode .form-group input[type="date"],
+body.dark-mode .form-group input[type="datetime-local"],
+body.dark-mode .form-group select,
+body.dark-mode .form-group textarea {
+    background-color: #3a3a3a;
+    border-color: #555;
+    color: #f0f0f0;
+}
+/* Focus style for form inputs */
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 52, 152, 219), 0.25); /* Assuming --primary-color-rgb is defined or use actual RGB */
+    outline: none;
+}
+
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.file-help {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  margin-top: 5px;
+}
+body.dark-mode .file-help {
+    color: #a0a0a0;
+}
+
+/* Question Block for Create Test Form */
+.question-block {
+    border: 1px solid #e0e0e0;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: var(--border-radius);
+    background-color: #f9f9f9;
+}
+.question-block h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--dark-color);
+}
+body.dark-mode .question-block {
+    background-color: #383838;
+    border-color: #505050;
+}
+body.dark-mode .question-block h4 {
+    color: var(--light-color);
+}
+
+
+/* Buttons (Header buttons, etc.) */
+.toggle-button, .logout-button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.toggle-button {
+  background-color: var(--light-color);
+  color: var(--dark-color);
+  margin-right: 10px;
+}
+.toggle-button:hover {
+  background-color: #d5dbdb;
+}
+body.dark-mode .toggle-button {
+    background-color: #4a4a4a;
+    color: #f0f0f0;
+}
+body.dark-mode .toggle-button:hover {
+    background-color: #5a5a5a;
+}
+
+
+.logout-button {
+  background-color: var(--accent-color);
+  color: white;
+}
+.logout-button:hover {
+  background-color: #c0392b; /* Darker accent */
+}
+
+/* Flash Messages Styling */
+.flash-messages-container {
+  position: fixed;
+  top: 20px; /* Closer to top */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  width: auto;
+  min-width: 320px; /* Slightly wider min-width */
+  max-width: 90%;
+}
+
+.flash-message {
+  padding: 12px 18px;
+  margin-bottom: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* Slightly stronger shadow */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  opacity: 0;
+  animation: fadeInFlash 0.5s forwards, fadeOutFlash 0.5s 4.5s forwards;
+}
+
+@keyframes fadeInFlash {
+  from { opacity: 0; transform: translateY(-10px); } /* Start from above */
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOutFlash {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+
+
+.flash-message.flash-success {
+  color: #0f5132; background-color: #d1e7dd; border-color: #badbcc;
+}
+.flash-message.flash-error {
+  color: #842029; background-color: #f8d7da; border-color: #f5c2c7;
+}
+.flash-message.flash-info {
+  color: #055160; background-color: #cff4fc; border-color: #b6effb;
+}
+.flash-message.flash-warning {
+  color: #664d03; background-color: #fff3cd; border-color: #ffecb5;
+}
+
+.flash-close-btn {
+  background: none; border: none; font-size: 1.4rem; font-weight: bold;
+  color: inherit; opacity: 0.7; cursor: pointer; padding: 0 0 0 15px; line-height: 1;
+}
+.flash-close-btn:hover { opacity: 1; }
+
+/* Dark Mode Adjustments for Flash Messages */
+body.dark-mode .flash-message.flash-success {
+  color: #a3cfbb; background-color: #143625; border-color: #1f5138;
+}
+body.dark-mode .flash-message.flash-error {
+  color: #f0b6bc; background-color: #58151c; border-color: #8a2c35;
+}
+body.dark-mode .flash-message.flash-info {
+  color: #9eeaf9; background-color: #032830; border-color: #087990;
+}
+body.dark-mode .flash-message.flash-warning {
+  color: #ffd76a; background-color: #403001; border-color: #664d03;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .dashboard-header div { /* Container for buttons in header */
+    margin-top: 15px;
+    width: 100%; /* Make buttons take full width if needed */
+    display: flex;
+    justify-content: space-between; /* Example for button layout */
+  }
+  .main-navigation ul {
+    flex-wrap: wrap;
+    justify-content: space-around; /* Better distribution on small screens */
+  }
+  .main-navigation li {
+    margin: 5px;
+  }
+  .dashboard-grid, .subject-grid, .test-grid, .material-grid, .assignment-grid {
+    grid-template-columns: 1fr; /* Single column for all grids on small screens */
+  }
+  .subject-content-row {
+      flex-direction: column; /* Stack material and assignment columns */
+  }
+  .flash-messages-container {
+      top: 10px; /* Adjust for smaller screens */
+      width: 95%;
+  }
+}
+
+/* Animations (General card fade-in) */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dashboard-card, .profile-card, .subject-card, .material-card, .assignment-card, .test-card, .content-section {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Staggered animation for items in a grid (optional, can be complex to maintain) */
+/* Example for .dashboard-card, can be adapted for others if needed */
+.dashboard-grid > .dashboard-card:nth-child(1) { animation-delay: 0.05s; }
+.dashboard-grid > .dashboard-card:nth-child(2) { animation-delay: 0.1s; }
+.dashboard-grid > .dashboard-card:nth-child(3) { animation-delay: 0.15s; }
+/* Add more if you have many cards loading at once */
+
+
+/* Utility for hiding elements visually but keeping them accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Ensure checkbox lists in forms are scrollable if they get too long */
+.subject-checkboxes { /* From teacher profile completion form */
+  display: block;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: var(--border-radius);
+}
+body.dark-mode .subject-checkboxes {
+    background-color: #3a3a3a;
+    border-color: #555;
+}
+.subject-checkboxes label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: normal; /* Labels inside checkbox list might not need to be bold */
+}
+body.dark-mode .subject-checkboxes label {
+    color: #e0e0e0;
+}
+
+/* Greeting Section Styling (Student Dashboard) */
+.dashboard-section.greeting { /* More specific selector */
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: 25px;
+  border-radius: var(--border-radius);
+  margin-bottom: 25px;
+  box-shadow: var(--box-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-section.greeting::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 150px;
+  height: 150px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+.dashboard-section.greeting::after {
+  content: '';
+  position: absolute;
+  bottom: -30px;
+  left: -30px; /* Changed to left for variation */
+  width: 100px;
+  height: 100px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+.dashboard-section.greeting p {
+  font-size: 1.1rem; /* Slightly larger welcome text */
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.daily-quote {
+  font-style: italic;
+  margin-top: 15px;
+  padding-left: 15px;
+  border-left: 3px solid rgba(255, 255, 255, 0.6); /* More visible border */
+  position: relative;
+  z-index: 1;
+  font-size: 0.95rem;
+}
+
+body.dark-mode .dashboard-section.greeting {
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+}
+
+body.dark-mode .dashboard-section.greeting::before,
+body.dark-mode .dashboard-section.greeting::after {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Collapsible card content (from student dashboard) */
+.card-toggle { /* The h3 that acts as a toggle */
+    cursor: pointer;
+}
+.card-toggle:hover {
+    color: var(--primary-color);
+}
+.card-content.collapsed {
+    display: none;
+}
+.card-content ul {
+    list-style-position: inside;
+    padding-left: 0; /* Reset padding if list-style-position is inside */
+}
+.card-content li {
+    margin-bottom: 5px;
+}
+.subsection-heading { /* e.g., "Previous Semester Marks" */
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 15px;
+    margin-bottom: 8px;
+    color: var(--dark-color);
+}
+body.dark-mode .subsection-heading {
+    color: var(--light-color);
+}
+

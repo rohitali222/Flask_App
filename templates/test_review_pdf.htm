@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Review - {{ test.title }}</title>
+    <style>
+        /* Basic styling for PDF - WeasyPrint is good with CSS */
+        body { 
+            font-family: "DejaVu Sans", sans-serif; /* DejaVu Sans is good for unicode characters */
+            font-size: 10pt; 
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
+        .container { padding: 20px; }
+        .header { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            border-bottom: 1px solid #ccc; 
+            padding-bottom: 10px; 
+        }
+        .header h1 { margin: 0; font-size: 18pt; }
+        .header p { margin: 5px 0; font-size: 10pt; color: #333; }
+
+        .test-info { 
+            margin-bottom: 15px; 
+            padding: 10px; 
+            border: 1px solid #eee; 
+            border-radius: 4px; 
+            background-color: #f9f9f9; 
+        }
+        .test-info p { margin: 5px 0; }
+
+        h3 { 
+            font-size: 14pt; 
+            margin-top: 20px; 
+            margin-bottom: 10px; 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 5px;
+        }
+        
+        .question-review-block {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px dotted #ccc;
+        }
+        .question-review-block:last-child { border-bottom: none; }
+        .question-text { font-weight: bold; font-size: 11pt; }
+        .question-meta { font-size: 9pt; color: #555; margin-bottom: 8px; }
+        
+        .question-image { 
+            max-width: 90%; /* Relative to container */
+            height: auto; 
+            max-height: 250px; /* Control max image height */
+            display: block; 
+            margin: 8px auto; /* Center image if it's smaller than container */
+            border: 1px solid #ddd;
+        }
+        
+        .correct-answer-section { margin-top: 8px; }
+        .correct-answer-section p { margin: 3px 0 3px 15px; }
+        .correct-answer-highlight { 
+            background-color: #e6ffe6; /* Light green for correct MCQ option */
+            padding: 5px; 
+            border-left: 3px solid green; 
+        }
+        
+        .explanation-section { 
+            margin-top: 10px; 
+            padding-top: 10px; 
+            border-top: 1px dashed #eee; 
+        }
+        .explanation-section h5 { 
+            font-size: 10pt; 
+            margin-top: 0; 
+            margin-bottom: 5px; 
+            color: #444; 
+        }
+        .explanation-content { font-size: 9.5pt; line-height: 1.5; }
+        .explanation-content p { margin-bottom: 0.5em; }
+        .explanation-content pre { 
+            background-color: #f0f0f0; 
+            padding: 8px; 
+            border-radius: 3px; 
+            border: 1px solid #ddd;
+            overflow-x: auto; 
+            font-size: 8.5pt;
+            white-space: pre-wrap; /* Important for wrapping code lines */
+            word-wrap: break-word; /* Break long words if necessary */
+        }
+        .explanation-content code { font-family: "DejaVu Sans Mono", monospace; }
+
+        /* WeasyPrint specific page numbering */
+        @page {
+            size: A4;
+            margin: 1.5cm; /* Standard margins */
+            
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 9pt;
+                color: #666;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Test Review & Explanations</h1>
+            <p>Smart Tutoring System</p>
+        </div>
+
+        <div class="test-info">
+            <h3>Test: {{ test.title | default('N/A') }}</h3>
+            <p><strong>Subject:</strong> {{ test.subject | default('N/A') }}</p>
+            <p><strong>Semester:</strong> {{ test.semester | default('N/A') }}</p>
+        </div>
+
+        <h3>Questions & Explanations</h3>
+        {% if questions_data %}
+            {% for question in questions_data %}
+            <div class="question-review-block">
+                <p class="question-text">{{ loop.index }}. {{ question.question_text | safe }}</p>
+                <p class="question-meta">
+                    <strong>Topic:</strong> {{ question.topic | default('N/A') }} | 
+                    <strong>Type:</strong> {{ question.question_type | title | default('N/A') }} |
+                    <strong>Marks:</strong> {{ question.marks | default('1') }}
+                </p>
+                
+                {% if question.image_full_url %}
+                    <img src="{{ question.image_full_url }}" alt="Question Image" class="question-image">
+                {% elif question.image_filename %} 
+                    <!-- Fallback if full URL somehow wasn't generated, though it should be -->
+                    <p><small><em>(Image reference: {{ question.image_filename }})</em></small></p>
+                {% endif %}
+
+                <div class="correct-answer-section">
+                    {% set q_type = question.question_type | default('', true) | lower %}
+                    {% if q_type == 'mcq' %}
+                        <p><strong>Options:</strong></p>
+                        <p class="{{ 'correct-answer-highlight' if question.correct_option == 'A' else '' }}">A) {{ question.option_a }}</p>
+                        <p class="{{ 'correct-answer-highlight' if question.correct_option == 'B' else '' }}">B) {{ question.option_b }}</p>
+                        <p class="{{ 'correct-answer-highlight' if question.correct_option == 'C' else '' }}">C) {{ question.option_c }}</p>
+                        <p class="{{ 'correct-answer-highlight' if question.correct_option == 'D' else '' }}">D) {{ question.option_d }}</p>
+                        <p style="margin-top:5px;"><strong>Correct Option:</strong> {{ question.correct_option }}</p>
+                    {% else %} {# For fill_blank, true_false, etc. #}
+                        <p class="correct-answer-highlight"><strong>Correct Answer:</strong> {{ question.correct_answer_display | default('N/A') }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="explanation-section">
+                    <h5>AI Generated Explanation:</h5>
+                    <div class="explanation-content">
+                        {{ question.ai_explanation_html | safe if question.ai_explanation_html else '<p><small>No AI explanation available for this question.</small></p>' }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No questions found for this test review.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

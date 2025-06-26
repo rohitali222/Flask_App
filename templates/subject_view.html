@@ -1,0 +1,232 @@
+<!-- templates/subject_view.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ subject }} | STS</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .page-header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .page-header h1 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 2rem;
+        }
+        .page-header .breadcrumb {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        .page-header .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        .page-header .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .content-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #fdfdfd;
+            border-radius: var(--border-radius);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .content-section h3 {
+            color: var(--dark-color);
+            margin-top: 0;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--light-color);
+            font-size: 1.5rem;
+        }
+
+        /* Re-using test-card, test-grid from dashboard.css */
+        /* Ensure .test-card .btn styles are appropriate */
+        .test-card .btn { margin-top: 5px; margin-right: 5px; }
+        .test-card p strong { font-weight: 600; color: var(--dark-color); }
+        .test-card .attempt-summary { margin-bottom: 10px; }
+
+        .material-card, .assignment-card { /* Styles from dashboard.css should apply */
+            margin-bottom: 15px;
+        }
+        .no-content {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            text-align: center;
+            color: var(--text-light);
+        }
+
+        /* Dark mode considerations (basic) */
+        body.dark-mode .container { background-color: #2d2d2d; color: #f0f0f0; }
+        body.dark-mode .page-header { border-bottom-color: #444; }
+        body.dark-mode .page-header h1 { color: #fff; }
+        body.dark-mode .page-header .breadcrumb { color: #aaa; }
+        body.dark-mode .page-header .breadcrumb a { color: var(--primary-color); }
+        body.dark-mode .content-section { background-color: #333; border-color: #444; }
+        body.dark-mode .content-section h3 { color: #fff; border-bottom-color: #555; }
+        body.dark-mode .no-content { background-color: #252525; color: #a0a0a0; }
+        body.dark-mode .test-card p strong { color: var(--light-color); }
+
+    </style>
+</head>
+<body class="{{ 'dark-mode' if session.get('dark_mode') else '' }}">
+    
+    <nav class="main-navigation">
+      <ul>
+        <li><a href="{{ url_for('dashboard') }}">🏠 Dashboard</a></li>
+        <li><a href="{{ url_for('calendar') }}">📅 Calendar</a></li>
+        {# Add other relevant nav items #}
+      </ul>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <p class="breadcrumb"><a href="{{ url_for('dashboard') }}">Dashboard</a> &raquo; {{ subject }}</p>
+            <h1>{{ subject }}</h1>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-messages-container" style="position: static; margin-bottom: 20px;"> {# Adjusted style for local context #}
+              {% for category, message in messages %}
+                <div class="flash-message flash-{{ category }}" role="alert">
+                  <span>{{ message }}</span>
+                  <button type="button" class="flash-close-btn" onclick="this.parentElement.style.display='none';">&times;</button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Study Materials Section -->
+        <div class="content-section">
+            <h3>📚 Study Materials</h3>
+            {% if materials %}
+                <div class="material-grid"> {# Assuming similar grid to dashboard if multiple items #}
+                    {% for material in materials %}
+                    <div class="material-card">
+                        <div class="material-header">
+                            <h4>{{ material.title }}</h4>
+                        </div>
+                        <div class="material-meta">
+                            <span>Uploaded by: {{ material.teacher_name }}</span>
+                            <span>Date: {{ material.upload_date.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        <div class="material-actions">
+                            <a href="{{ material.file_url }}" class="btn download-btn" download>Download</a>
+                            {% if material.description %}
+                            <p style="margin-top: 10px; font-size: 0.9em;"><em>{{ material.description }}</em></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-content">No study materials uploaded for {{ subject }} yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Assignments Section -->
+        <div class="content-section">
+            <h3>📝 Assignments</h3>
+            {% if assignments %}
+                <div class="assignment-grid"> {# Assuming similar grid to dashboard #}
+                    {% for assignment in assignments %}
+                    <div class="assignment-card {% if assignment.due_date and assignment.due_date < datetime.now() %}past-due{% endif %}">
+                        <div class="assignment-header">
+                            <h4>{{ assignment.title }}</h4>
+                        </div>
+                        <div class="assignment-meta">
+                            <span>Due: {{ assignment.due_date.strftime('%Y-%m-%d %I:%M %p') if assignment.due_date else 'No due date' }}</span>
+                            <span>By: {{ assignment.teacher_name }}</span>
+                        </div>
+                        <div class="assignment-actions">
+                            <a href="{{ assignment.file_url }}" class="btn download-btn" download>Download Assignment</a>
+                            <a href="{{ url_for('submit_assignment', assignment_id=assignment.id) }}" class="btn submit-btn">Submit Work</a>
+                             {% if assignment.description %}
+                            <p style="margin-top: 10px; font-size: 0.9em;"><em>{{ assignment.description }}</em></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-content">No assignments posted for {{ subject }} yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Tests & Quizzes Section for this Subject -->
+        {# In templates/subject_view.html #}
+
+{# ... other content for assignments, materials ... #}
+
+<h3>🧪 Tests & Quizzes for {{ subject }}</h3>
+{% if subject_tests %}
+    <div class="test-grid"> {# Or whatever container you use for tests #}
+        {% for test_item in subject_tests %}
+            <div class="test-card {% if test_item.due_date and test_item.due_date < datetime.now() %}past-due{% endif %}">
+                <div class="test-header">
+                    <h4>{{ test_item.title }}</h4>
+                    {# ... other test details like type, teacher ... #}
+                </div>
+                <div class="test-details">
+                    <span><strong>Subject:</strong> {{ test_item.subject }}</span>
+                    <span><strong>By:</strong> Prof. {{ test_item.teacher_name }}</span>
+                    {% if test_item.due_date %}
+                        <span><strong>Due:</strong> {{ test_item.due_date.strftime('%Y-%m-%d %I:%M %p') }}</span>
+                    {% endif %}
+                </div>
+                <div class="test-actions">
+                    {% if test_item.attempted %}
+                        <a href="{{ url_for('view_test_attempt_results', attempt_id=test_item.attempt_id) }}" class="btn btn-info btn-sm">View My Attempt ({{ test_item.student_score }}/{{ test_item.total_questions_in_attempt }})</a>
+                        {# <<< ADD THE NEW LINK HERE for already attempted tests >>> #}
+                        <a href="{{ url_for('view_test_review_with_explanations', test_id=test_item.id) }}" class="btn btn-outline-secondary btn-sm" style="margin-left: 5px;">Review Test & Explanations</a>
+                    {% else %}
+                        <a href="{{ url_for('take_test_page', test_id=test_item.id) }}" class="btn take-test-btn btn-sm">Take Test</a>
+                        {# <<< ADD THE NEW LINK HERE for tests not yet attempted >>> #}
+                        <a href="{{ url_for('view_test_review_with_explanations', test_id=test_item.id) }}" class="btn btn-outline-secondary btn-sm" style="margin-left: 5px;">Preview Test & Explanations</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+        {% endif %}
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="{{ url_for('dashboard') }}" class="btn" style="background-color: #7f8c8d;">Back to Dashboard</a>
+        </div>
+    </div>
+
+<script>
+    // Basic script for flash message closing, if not already global
+    document.addEventListener('DOMContentLoaded', function() {
+        const closeButtons = document.querySelectorAll('.flash-close-btn');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                this.parentElement.style.display = 'none';
+            });
+        });
+    });
+</script>
+</body>
+</html>

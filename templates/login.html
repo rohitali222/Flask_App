@@ -1,0 +1,60 @@
+<!-- login.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | Smart Tutoring System</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <h1 class="sts-title">🎓 Smart Tutoring System</h1>
+      <p class="sts-subtitle">Login to continue your learning journey</p>
+
+      <form class="login-form" action="/login" method="POST">
+        <!-- Role Selection -->
+        <label for="role">Login as</label>
+        <select id="role" name="role" required>
+          <option value="" disabled selected>Select your role</option>
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+          <option value="admin">Admin</option>
+        </select>
+
+        <!-- Username Field -->
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="e.g. john_doe" required>
+
+        <!-- Password Field -->
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+
+        <!-- Eye Tracking Checkbox -->
+        <div class="form-group" style="margin-top: 15px; margin-bottom: 15px; text-align: left;">
+            <input type="checkbox" id="enable_eye_tracking" name="enable_eye_tracking" value="yes" style="width: auto; vertical-align: middle;">
+            <label for="enable_eye_tracking" style="display: inline; font-weight: normal; margin-left: 5px; vertical-align: middle;">Enable Eye Tracking on login?</label>
+        </div>
+
+        <!-- Error Message -->
+        {% if error %}
+          <p class="error-message">{{ error }}</p>
+        {% endif %}
+
+        <!-- Login Button -->
+        <button type="submit" class="login-button">Login</button>
+      </form>
+
+      <!-- Signup Prompt -->
+      <p class="signup-prompt">
+        New to STS? <a href="/signup">Create an account</a>
+      </p>
+
+      <p class="forgot-password-prompt" style="margin-top: 10px;">
+        <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+      </p>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tests</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+    {% include 'navigation.html' %}
+    
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h2>📝 Tests</h2>
+            <div>
+                <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
+            </div>
+        </header>
+
+        <section class="tests-section">
+            {% if tests %}
+                <div class="test-grid">
+                    {% for test in tests %}
+                    <div class="test-card {% if test.due_date < datetime.now() %}past-due{% endif %}">
+                        <div class="test-header">
+                            <h3>{{ test.title }}</h3>
+                            <span class="test-type">{{ test.test_type|title }}</span>
+                        </div>
+                        <div class="test-details">
+                            <p><strong>Subject:</strong> {{ test.subject }}</p>
+                            <p><strong>Semester:</strong> {{ test.semester }}</p>
+                            <p><strong>Due:</strong> {{ test.due_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>Questions:</strong> {{ test.questions|length }}</p>
+                        </div>
+                        <div class="test-actions">
+                            {% if session.role == 'student' %}
+                                <a href="/take-test/{{ test.id }}" class="take-test-btn">Take Test</a>
+                            {% else %}
+                                <a href="/test-results/{{ test.id }}" class="results-btn">View Results</a>
+                                <a href="/edit-test/{{ test.id }}" class="edit-btn">Edit</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-tests">No tests found</p>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1157 @@
+<!--dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard | STS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-messages-container"
+  style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 1050; width: auto; max-width: 90%;">
+  {% for category, message in messages %}
+  <div class="flash-message flash-{{ category }}" role="alert"
+    style="padding: 10px 15px; margin-bottom: 10px; border: 1px solid transparent; border-radius: var(--border-radius); box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center;">
+    <span>{{ message }}</span>
+    <button type="button" class="flash-close-btn" onclick="this.parentElement.style.display='none';"
+      style="background:none; border:none; font-size:1.2rem; color:inherit; cursor:pointer; margin-left:15px;">&times;</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+
+<body>
+
+  <!-- Add this near the top of your dashboard -->
+  <nav class="main-navigation">
+    <ul>
+      <li><a href="/dashboard" class="active">🏠 Dashboard</a></li>
+      <li><a href="/calendar">📅 Calendar</a></li>
+      <li><a href="/grades">📊 Grades</a></li>
+      <li><a href="/messages">✉️ Messages</a></li>
+      {% if role == 'teacher' %}
+      <li><a href="/analytics">📈 Analytics</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  <div class="dashboard-container">
+    <header class="dashboard-header">
+      <h2>🎓 {{ role.title() }} Dashboard</h2>
+      <div>
+        <button type="button" id="toggle-theme" class="toggle-button">🌙 Toggle Dark Mode</button>
+        <form method="POST" action="/logout" style="display: inline;">
+          <button type="submit" class="logout-button">Logout</button>
+        </form>
+      </div>
+    </header>
+
+    {% if session.get('eye_control_active') %}
+    <div id="eye-tracking-controls" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+      <button onclick="stopEyeTracking()" class="btn btn-danger">Stop Eye Tracking</button>
+      <p id="eye-tracking-status" style="font-size: 0.8em; color: green;">Eye Tracking is Active</p>
+    </div>
+    {% elif session.get('eye_control_enabled_preference') and not session.get('eye_control_active') %}
+    {# This part is if they enabled it at login but it's not active (e.g. script crashed or was stopped) #}
+    <div id="eye-tracking-controls" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+      <button onclick="startEyeTrackingManually()" class="btn btn-success">Start Eye Tracking</button>
+      <p id="eye-tracking-status" style="font-size: 0.8em; color: orange;">Eye Tracking is Inactive (Enabled on Login)
+      </p>
+    </div>
+    {% endif %}
+    {# In templates/dashboard.html #}
+
+    {# ... (flash messages and other initial HTML if any, before role-specific content) ... #}
+
+    {% if role == 'student' %}
+    <section class="dashboard-section greeting">
+      <p>Welcome back, <strong>{{ username }}</strong>!</p>
+      <blockquote class="daily-quote">"The best way to predict your future is to create it." – Abraham Lincoln
+      </blockquote>
+    </section>
+
+    <section class="dashboard-section profile-card">
+      <h3>👤 Student Profile</h3>
+      <ul>
+        <li><strong>Name:</strong> {{ username }}</li>
+        <li><strong>Roll No:</strong> {{ roll | default('N/A') }}</li>
+        <li><strong>Branch:</strong> {{ department | default('N/A') }}</li>
+        <li><strong>Semester:</strong> {{ semester | default('N/A') }}</li>
+      </ul>
+    </section>
+
+
+    {% if active_lectures_for_student %}
+    <section class="dashboard-section live-lecture-notification-section dashboard-card"
+      style="background-color: #fff3cd; border-left: 5px solid #ffeeba;">
+      <h3>📢 Live Lectures Happening Now!</h3>
+      <ul class="live-lecture-list" style="list-style: none; padding-left: 0;">
+        {% for lecture in active_lectures_for_student %}
+        <li style="padding: 10px; border-bottom: 1px solid #eee;">
+          <strong>{{ lecture.title if lecture.title else lecture.subject }}</strong> ({{ lecture.subject }})
+          <p style="margin: 5px 0;">
+            Started by: Prof. {{ lecture.teacher_username }} at {{ lecture.started_at.strftime('%I:%M %p') }}
+          </p>
+          <a href="{{ url_for('lecture_room', lecture_id=lecture.id) }}" class="btn btn-success btn-sm"
+            style="background-color: #28a745; color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; display: inline-block; margin-top: 5px;">
+            🚀 Join Live Lecture
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+
+    <div class="dashboard-card">
+      <h3>📘 My Subjects (Semester {{ semester | default('Current') }})</h3>
+      <div class="subject-grid">
+        {% if subjects %}
+        {% for subject_name_iter in subjects %}
+        <div class="subject-card">
+          <div class="subject-card-header">
+            <h4>{{ subject_name_iter }}</h4>
+          </div>
+          <div class="subject-card-body">
+            <p>Access materials, assignments, and details for {{subject_name_iter}}.</p>
+            <div class="subject-actions">
+              <a href="{{ url_for('view_subject', subject_name=subject_name_iter|replace('&', 'and')|replace(' ', '-')|lower) }}"
+                class="subject-action-btn">
+                <span class="icon">📖</span> View Subject Details
+              </a>
+            </div>
+          </div>
+          <div class="subject-card-footer">
+            <small>
+              Assignments:
+              {% if grouped_assignments[subject_name_iter] %}
+              {{ grouped_assignments[subject_name_iter]|length }}
+              {% else %}
+              0
+              {% endif %}
+              <br>
+              Materials:
+              {% if grouped_materials[subject_name_iter] %}
+              {{ grouped_materials[subject_name_iter]|length }}
+              {% else %}
+              0
+              {% endif %}
+            </small>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="no-subjects" style="padding: 10px;">
+          You are not currently enrolled in any subjects for this semester.
+          <a href="{{ url_for('complete_profile') }}">Please complete your profile</a> to select your subjects.
+        </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="content-section">
+      <h3>📚 Study Materials & 📝 Assignments by Subject</h3>
+      {% if subjects %}
+      {% for subject_name_iter_detail in subjects %}
+      <div class="subject-group">
+        <h4 class="subject-heading">{{ subject_name_iter_detail.title() }}</h4>
+        <div class="subject-content-row" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+          <div class="material-column" style="flex: 1; min-width: 300px;">
+            <h5>📚 Materials</h5>
+            {% if grouped_materials[subject_name_iter_detail] %}
+            <div class="material-grid">
+              {% for material in grouped_materials[subject_name_iter_detail] %}
+              <div class="material-card">
+                <div class="material-header">
+                  <h4>{{ material.title }}</h4>
+                  {% if material.difficulty_level %}
+                  <span class="badge badge-secondary">{{ material.difficulty_level }}</span>
+                  {% endif %}
+                </div>
+                <div class="material-meta">
+                  <span>Uploaded by: {{ material.teacher_name }}</span>
+                  <span>Date: {{ material.upload_date.strftime('%Y-%m-%d') }}</span>
+                </div>
+                <div class="material-actions">
+                  {% if material.filename %}
+                  <a href="{{ url_for('serve_upload', filename=material.filename) }}" class="download-btn"
+                    download>Download</a>
+                  {% else %}
+                  <span class="download-btn disabled" title="No file available for this material.">Download (No
+                    File)</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="no-content">No materials uploaded for {{ subject_name_iter_detail }}.</p>
+            {% endif %}
+          </div>
+          <div class="assignment-column" style="flex: 1; min-width: 300px;">
+            <h5>📝 Assignments</h5>
+            {% if grouped_assignments[subject_name_iter_detail] %}
+            <div class="assignment-grid">
+              {% for assignment in grouped_assignments[subject_name_iter_detail] %}
+              <div
+                class="assignment-card {% if assignment.due_date and assignment.due_date < datetime.now() %}past-due{% endif %}">
+                <div class="assignment-header">
+                  <h4>{{ assignment.title }}</h4>
+                  {% if assignment.difficulty_level %}
+                  <span class="badge badge-secondary">{{ assignment.difficulty_level }}</span>
+                  {% endif %}
+                </div>
+                <div class="assignment-meta">
+                  <span>Due: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date'
+                    }}</span>
+                  <span>Status:
+                    {% if assignment.submission_status %}
+                    {{ assignment.submission_status }}
+                    {% else %}
+                    Not submitted
+                    {% endif %}
+                  </span>
+                </div>
+                <div class="assignment-actions">
+                  {% if assignment.filename %}
+                  <a href="{{ url_for('serve_upload', filename=assignment.filename) }}" class="download-btn"
+                    download>Download</a>
+                  {% else %}
+                  <span class="download-btn disabled" title="No file available for this assignment.">Download (No
+                    File)</span>
+                  {% endif %}
+                  <a href="{{ url_for('submit_assignment', assignment_id=assignment.id) }}" class="submit-btn">Submit
+                    Work</a>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="no-content">No assignments uploaded for {{ subject_name_iter_detail }}.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <p class="no-content">You're not enrolled in any subjects. <a href="{{ url_for('complete_profile') }}">Complete
+          your profile</a>.</p>
+      {% endif %}
+    </div>
+
+    <div class="content-section">
+      <h3>🧪 Upcoming Tests & Quizzes</h3>
+      {% if tests %}
+      <div class="test-grid">
+        {% for test in tests %}
+        <div class="test-card {% if test.due_date and test.due_date < datetime.now() %}past-due{% endif %}">
+          <div class="test-header">
+            <h4>{{ test.title }}</h4>
+            {% if test.difficulty_level %}
+            <span class="badge badge-secondary">{{ test.difficulty_level }}</span>
+            {% endif %}
+            <span class="test-type"
+              style="background-color: {{ '#4a6fa5' if test.test_type == 'quiz' else ('#ffc107' if test.test_type == 'midterm' else '#e74c3c') }}; color: {{'white' if test.test_type != 'midterm' else 'black'}};">
+              {{ test.test_type.replace('_', ' ')|title }}
+            </span>
+          </div>
+          <div class="test-details">
+            <span><strong>Subject:</strong> {{ test.subject }}</span>
+            <span><strong>By:</strong> Prof. {{ test.teacher_name }}</span>
+            {% if test.due_date %}
+            <span><strong>Due:</strong> {{ test.due_date.strftime('%Y-%m-%d %I:%M %p') }}</span>
+            {% else %}
+            <span>No specific due date.</span>
+            {% endif %}
+          </div>
+          <div class="test-actions">
+            <a href="{{ url_for('take_test_page', test_id=test.id) }}" class="btn take-test-btn">Take Test</a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="no-content">No tests scheduled for your subjects in this semester yet.</p>
+      {% endif %}
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="dashboard-card">
+        <h3>🛠️ Labs & Projects</h3>
+        <ul>
+          <li>🔍 Mini Project Review – May 5</li>
+          <li>📤 DE Lab Submission – May 3</li>
+          <li>🧪 OS Practical Internal – May 7</li>
+        </ul>
+        <small class="card-note">Keep your lab journals and code ready!</small>
+      </div>
+      <div class="dashboard-card">
+        <h3>📂 Recent Activities</h3>
+        <ul>
+          <li>✅ DS Assignment 3 submitted</li>
+          <li>🎧 OS Lecture attended</li>
+          <li>📓 Lab journal uploaded</li>
+        </ul>
+        <small class="card-note">You’re progressing steadily—keep it up!</small>
+      </div>
+      <div class="dashboard-card">
+        <h3 class="card-toggle" onclick="toggleCard(this)">📈 Academic Progress</h3>
+        <div class="card-content">
+          <ul>
+            <li>📊 DSA: <strong>70%</strong> completed</li>
+            <li>🧠 OS: <strong>55%</strong> completed</li>
+            <li>📐 Maths III: <strong>80%</strong> completed</li>
+          </ul>
+          <h4 class="subsection-heading">📚 Previous Semester Marks</h4>
+          <ul>
+            <li>Sem 7 CGPA: <strong>8.4</strong></li>
+            <li>Internet of Things (IoT): 82%</li>
+            <li>Machine Learning: 75%</li>
+            <li>Real Time Systems: 78%</li>
+          </ul>
+          <small class="card-note">Track your syllabus completion and past performance.</small>
+        </div>
+      </div>
+      <div class="dashboard-card">
+        <h3>📢 Campus Announcements</h3>
+        <ul>
+          <li>📝 Mid-Sem Exams: May 10–15</li>
+          <li>💻 Hackathon Registration open</li>
+          <li>🎙️ IEEE Seminar: May 4, 1:00 PM</li>
+        </ul>
+        <small class="card-note">Don’t miss important deadlines and events.</small>
+      </div>
+      <div class="dashboard-card actions">
+        <h3>🚀 Quick Access</h3>
+        <button class="action-btn">🧠 Join Live Class</button>
+        <button class="action-btn">📤 Upload Assignment</button>
+        <button class="action-btn">🤝 Connect with Mentor</button>
+        <small class="card-note">Jump into tasks and resources easily.</small>
+      </div>
+    </div>
+
+
+    {# In templates/dashboard.html #}
+
+    {# ... (previous parts of dashboard.html, including student section and flash messages) ... #}
+
+    <!-- In templates/dashboard.html -->
+
+{# ... (previous parts of dashboard.html, including student section and flash messages) ... #}
+
+{% elif role == 'teacher' %}
+    {% if user_status == 'pending' %}
+    {# This is the content shown to a teacher whose account is PENDING #}
+    <section class="dashboard-section greeting dashboard-card">
+      <p>Welcome, <strong>{{ username }}</strong>!</p>
+      <p style="color: orange; font-weight: bold; margin-top: 10px;">
+        Your account is currently pending approval from an administrator.
+        Please wait for the admin's response. You will be able to access your dashboard features once approved.
+      </p>
+    </section>
+    {% else %}
+    {# This is the content shown to a teacher whose account is APPROVED #}
+    <section class="dashboard-section greeting dashboard-card">
+      <p>Welcome, <strong>{{ username }}</strong>! Manage your courses and content below.</p>
+    </section>
+
+    <div class="semester-tabs-container dashboard-card">
+      <div class="semester-tabs">
+        {% for sem_tab_var in semesters_taught %}
+        <button class="tab-button {% if loop.first %}active{% endif %}"
+          onclick="openSemester(event, 'panel-sem-{{ sem_tab_var|replace(' ', '_')|replace('/', '_') }}')">
+          Semester {{ sem_tab_var }}
+        </button>
+        {% else %}
+        <p>You have not been assigned any semesters to teach yet. Please <a
+            href="{{ url_for('complete_teacher_profile') }}">complete your profile</a> or contact an administrator.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# Loop through each semester taught to create a panel for it #}
+    {% for sem_loop_var in semesters_taught %}
+    <div id="panel-sem-{{ sem_loop_var|replace(' ', '_')|replace('/', '_') }}"
+      class="semester-panel {% if loop.first %}active-panel{% endif %}"
+      style="{% if not loop.first %}display: none;{% else %}display: block;{% endif %};">
+
+      {% set current_semester_subjects = subjects_per_semester.get(sem_loop_var, []) %}
+      {% set current_sem_details = teacher_semester_details.get(sem_loop_var, {}) %}
+
+    
+
+      <div class="subject-grid">
+        {% if current_semester_subjects %}
+        {% for subject_item in current_semester_subjects %}
+        <div class="subject-card">
+          <div class="subject-card-header">
+            <h4>{{ subject_item }}</h4>
+          </div>
+          <div class="subject-card-body">
+            <div class="subject-actions">
+              <a href="{{ url_for('class_subject_view', semester=sem_loop_var, subject_name_url=subject_item|replace('&', 'and')|replace(' ', '-')|lower) }}"
+                class="subject-action-btn">
+                <span class="icon">🏠</span> Class Home
+              </a>
+              <a href="{{ url_for('class_subject_view', semester=sem_loop_var, subject_name_url=subject_item|replace('&', 'and')|replace(' ', '-')|lower) }}#assignments"
+                class="subject-action-btn">
+                <span class="icon">📝</span> Assignments
+              </a>
+              <a href="{{ url_for('class_subject_view', semester=sem_loop_var, subject_name_url=subject_item|replace('&', 'and')|replace(' ', '-')|lower) }}#materials"
+                class="subject-action-btn">
+                <span class="icon">📚</span> Resources
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>No subjects are assigned to you for Semester {{ sem_loop_var }} in your profile. <a
+            href="{{url_for('complete_teacher_profile')}}">Complete your profile</a>.</p>
+        {% endif %}
+      </div>
+
+      <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+            <h3>📤 Upload Content (Sem {{ sem_loop_var }})</h3>
+            <form action="{{ url_for('upload_content') }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="semester" value="{{ sem_loop_var }}">
+                <div class="form-group">
+                    <label>For Semester:</label>
+                    <input type="text" value="Semester {{ sem_loop_var }}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Subject:</label>
+                    <select name="subject" required>
+                        <option value="" disabled selected>Select subject for Sem {{ sem_loop_var }}</option>
+                        {% for subject_option_uc in current_semester_subjects %}
+                        <option value="{{ subject_option_uc }}">{{ subject_option_uc }}</option>
+                        {% else %}
+                        <option value="" disabled>No subjects found for this semester</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- ***** CORRECTED DIFFICULTY LEVEL SECTION for Upload Content ***** -->
+                <div class="form-group">
+                    <label for="upload_content_difficulty_level_{{sem_loop_var}}">Difficulty Level:</label>
+                    <select id="upload_content_difficulty_level_{{sem_loop_var}}" name="difficulty_level" class="form-control" required>
+                        <option value="" disabled selected>Select Level</option>
+                        <option value="Novice">Novice</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advance">Advance</option>
+                        <option value="General">General (for all levels)</option>
+                    </select>
+                </div>
+                <!-- ***** END OF CORRECTED DIFFICULTY LEVEL SECTION ***** -->
+
+                <div class="form-group">
+                    <label>Content Type:</label>
+                    <select name="content_type" class="content-type-select" required>
+                        <option value="notes">Lecture Notes</option>
+                        <option value="slides">Presentation Slides</option>
+                        <option value="video">Video Lecture</option>
+                        <option value="assignment">Assignment</option>
+                        <!-- Add other content types as needed -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Title:</label>
+                    <input type="text" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description (Optional):</label>
+                    <textarea name="description"></textarea>
+                </div>
+                
+                <div class="form-group due-date-group-class" style="display: none;"> <!-- This visibility is controlled by JS -->
+                    <label>Due Date (for assignments):</label>
+                    <input type="datetime-local" name="due_date">
+                </div>
+                <div class="form-group">
+                    <label>File:</label>
+                    <input type="file" name="file" required>
+                    <small class="file-help">Max 16MB (PDF, DOCX, PPTX, MP4, etc.)</small>
+                </div>
+                <button type="submit" class="upload-button">📤 Upload Content</button>
+            </form>
+        </div>
+
+        <div class="dashboard-card">
+          <h3>📹 Start Live Video Lecture (Sem {{ sem_loop_var }})</h3>
+          <form action="{{ url_for('start_live_lecture') }}" method="POST">
+            <input type="hidden" name="semester" value="{{ sem_loop_var }}">
+            <div class="form-group">
+              <label for="live_lecture_subject_{{sem_loop_var}}">Subject:</label>
+              <select name="subject" id="live_lecture_subject_{{sem_loop_var}}" class="form-control" required>
+                <option value="" disabled selected>Select subject</option>
+                {% for subject_option_ll in current_semester_subjects %}\
+                <option value="{{ subject_option_ll }}">{{ subject_option_ll }}</option>
+                {% else %}
+                <option value="" disabled>No subjects found for this semester</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="live_lecture_title_{{sem_loop_var}}">Lecture Title (Optional):</label>
+              <input type="text" id="live_lecture_title_{{sem_loop_var}}" name="title" class="form-control"
+                placeholder="e.g., Chapter 5 Review">
+            </div>
+            <button type="submit" class="btn btn-success"
+              style="background-color: var(--success-color, #28a745); width:100%;">Start Live Lecture</button>
+          </form>
+        </div>
+
+        <div class="dashboard-card">
+          <h3>🧪 Create New Test (Sem {{ sem_loop_var }})</h3>
+          <form method="POST" action="{{ url_for('create_test') }}" enctype="multipart/form-data">
+            <input type="hidden" name="semester" value="{{ sem_loop_var }}">
+            <div class="form-group"><label>For Semester:</label><input type="text" value="Semester {{ sem_loop_var }}"
+                disabled></div>
+            <div class="form-group">
+              <label>Subject:</label>
+              <select name="subject" required>
+                <option value="" disabled selected>Select subject for Sem {{ sem_loop_var }}</option>
+                {% for subject_option_ct in current_semester_subjects %}<option value="{{ subject_option_ct }}">{{
+                  subject_option_ct }}</option>{% else %}<option value="" disabled>No subjects found</option>{% endfor
+                %}
+              </select>
+            </div>
+            
+            <!-- ***** CORRECTED DIFFICULTY LEVEL SECTION for Create Test ***** -->
+            <div class="form-group">
+              <label for="test_difficulty_level_{{sem_loop_var}}">Overall Test Difficulty:</label>
+              <select id="test_difficulty_level_{{sem_loop_var}}" name="difficulty_level" class="form-control" required>
+                <option value="" disabled selected>Select Level</option>
+                <option value="Novice">Novice</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advance">Advance</option>
+                <option value="General">General (for all levels)</option>
+              </select>
+            </div>
+            <!-- ***** END OF CORRECTED DIFFICULTY LEVEL SECTION ***** -->
+
+            <div class="form-group"><label>Test Title:</label><input type="text" name="title" required></div>
+            <div class="form-group"><label>Due Date:</label><input type="datetime-local" name="due_date" required></div>
+            <div class="form-group"><label>Test Type:</label><input type="text" name="test_type" class="form-control"
+                placeholder="e.g., Quiz, Midterm" required></div>
+            
+            <div class="questions-container"></div>
+            <input type="hidden" name="question_count" class="question-count" value="0">
+            <button type="button" onclick="addQuestion(this)">➕ Add Question</button><br><br>
+            <button type="submit" class="test-button">✅ Create Test</button>
+          </form>
+        </div>
+
+        <div class="dashboard-card">
+          <h3>🧠 Provide PDF for AI Explanations (Sem {{ sem_loop_var }})</h3>
+          <form action="{{ url_for('upload_ai_training_material') }}" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="semester" value="{{ sem_loop_var }}">
+            <div class="form-group"><label for="ai-semester-{{sem_loop_var}}">For Semester:</label><input type="text"
+                id="ai-semester-{{sem_loop_var}}" value="Semester {{ sem_loop_var }}" disabled></div>
+            <div class="form-group">
+              <label for="ai-subject-{{sem_loop_var}}">Subject:</label>
+              <select name="subject" id="ai-subject-{{sem_loop_var}}" required>
+                <option value="" disabled selected>Select subject for Sem {{ sem_loop_var }}</option>
+                {% for subject_option_ai in current_semester_subjects %}<option value="{{ subject_option_ai }}">{{
+                  subject_option_ai }}</option>{% else %}<option value="" disabled>No subjects found</option>{% endfor
+                %}
+              </select>
+            </div>
+            <div class="form-group"><label for="ai-topic-{{sem_loop_var}}">Topic:</label><input type="text" name="topic"
+                id="ai-topic-{{sem_loop_var}}" placeholder="e.g., Linked Lists" required></div>
+            <div class="form-group"><label for="ai-guidance-{{sem_loop_var}}">Relevant Page(s)/Section
+                (Optional):</label><input type="text" name="guidance" id="ai-guidance-{{sem_loop_var}}"
+                placeholder="e.g., p. 45-48, Chapter 3"></div>
+            <div class="form-group"><label for="ai-file-{{sem_loop_var}}">PDF File:</label><input type="file"
+                name="file" id="ai-file-{{sem_loop_var}}" accept=".pdf" required><small class="file-help">PDF only. Max
+                16MB.</small></div>
+            <button type="submit" class="upload-button" style="background-color: var(--secondary-color);">🧠 Upload
+              PDF</button>
+          </form>
+        </div>
+
+        <div class="dashboard-card">
+          <h3>📝 Your Assignments (Sem {{ sem_loop_var }})</h3>
+          {% set assignments_this_sem = current_sem_details.get('assignments', []) %}\
+          {% if assignments_this_sem %}
+          <ul class="assignment-list">
+            {% for assignment in assignments_this_sem %}
+            <li><strong>{{ assignment.title }}</strong> ({{ assignment.subject }}){% if assignment.difficulty_level
+              %}<span class="badge badge-secondary">{{ assignment.difficulty_level }}</span>{% endif %}<br>Due: {{
+              assignment.due_date.strftime('%Y-%m-%d %H:%M') if assignment.due_date else 'No due date' }}<br><a
+                href="{{ url_for('view_assignment_submissions', assignment_id=assignment.id) }}"
+                class="view-submissions-link">View Submissions</a></li>
+            {% endfor %}
+          </ul>
+          {% else %}<p>No assignments uploaded for Semester {{ sem_loop_var }} yet.</p>{% endif %}
+        </div>
+
+        <div class="dashboard-card">
+          <h3>📝 Your Created Tests (Sem {{ sem_loop_var }})</h3>
+          {% set tests_for_this_semester = current_sem_details.get('tests_with_results', []) %}\
+          {% if tests_for_this_semester %}
+          <ul class="list-group assignment-list">
+            {% for test_group in tests_for_this_semester %}
+            {% set test_item = test_group.details %}
+            {% if test_item %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div><strong>{{ test_item.title }}</strong> ({{ test_item.subject }}){% if test_item.difficulty_level
+                %}<span class="badge badge-secondary">{{ test_item.difficulty_level }}</span>{% endif %}<br><small>Type:
+                  {{ test_item.test_type|title if test_item.test_type else 'N/A' }} | Due: {{
+                  test_item.due_date.strftime('%Y-%m-%d %H:%M') if test_item.due_date else 'N/A'
+                  }}</small><br><small>Created: {{ test_item.created_at.strftime('%Y-%m-%d %H:%M') if
+                  test_item.created_at else 'N/A' }}</small></div>
+              <div><a href="{{ url_for('view_test_results', test_id=test_item.id) }}"
+                  class="btn btn-sm view-submissions-link"
+                  style="background-color: var(--secondary-color); color:white; margin-top: 5px;">View Results</a>
+                </div>
+            </li>
+            {% else %}<li class="list-group-item">Error: Test details missing.</li>{% endif %}
+            {% endfor %}
+          </ul>
+          {% else %}<p>No tests created for Semester {{ sem_loop_var }} yet.</p>{% endif %}
+        </div>
+
+        <div class="dashboard-card">
+          <h3>📚 Your Uploaded Materials (Sem {{ sem_loop_var }})</h3>
+          {% set materials_this_sem = current_sem_details.get('materials', []) %}\
+          {% if materials_this_sem %}
+          <ul class="list-group assignment-list">
+            {% for material in materials_this_sem %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div><strong>{{ material.title }}</strong> ({{ material.subject }}){% if material.difficulty_level %}<span
+                  class="badge badge-secondary">{{ material.difficulty_level }}</span>{% endif %}<br><small>Type: {{
+                  material.type|title if material.type else 'N/A' }} | Uploaded: {{
+                  material.upload_date.strftime('%Y-%m-%d %H:%M') if material.upload_date else 'N/A' }}</small></div>
+              <div>
+                {% if material.filename %}
+                <a href="{{ url_for('serve_upload', filename=material.filename) }}" class="btn btn-sm btn-primary"
+                  download>Download</a>
+                {% else %}
+                <span class="btn btn-sm btn-primary disabled" title="No file available">Download</span>
+                {% endif %}
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}<p>No materials uploaded for Semester {{ sem_loop_var }} yet.</p>{% endif %}
+        </div>
+
+      </div> {# Close dashboard-grid for this semester panel #}
+    </div> {# Close semester-panel #}
+    {% endfor %} {# End of for sem_loop_var in semesters_taught #}
+    {% endif %} {# End of user_status check for teacher (pending vs approved) #}
+
+
+    {% elif role == 'admin' %}
+    <section class="dashboard-section greeting dashboard-card">
+      <p>Welcome Admin <strong>{{ username }}</strong>. Here's the system overview and management tools:</p>
+    </section>
+
+    <div class="dashboard-grid">
+      {# Card for Pending Teachers #}
+      <div class="dashboard-card admin-card">
+        <h3>⏳ Pending Teacher Approvals</h3>
+        {% if pending_teachers_list %}
+        <ul class="item-list">
+          {% for p_teacher in pending_teachers_list %}
+          <li>
+            <span>{{ p_teacher.username }} ({{ p_teacher.email }}) - Status: Pending</span>
+            <form action="{{ url_for('admin_approve_teacher', teacher_id=p_teacher.id) }}" method="POST"
+              style="display: inline; margin-left: 10px;">
+              <button type="submit" class="action-btn" style="background-color: #28a745;">Approve</button>
+            </form>
+            {# Optionally, add a "Reject" button and corresponding route/logic #}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p>No teachers currently pending approval.</p>
+        {% endif %}
+      </div>
+
+      {# Card 2: Manage Approved Teachers (as before, but now explicitly for approved ones) #}
+      <div class="dashboard-card admin-card">
+        <h3>👥 Manage Approved Teachers</h3>
+        {% if teachers_list %} {# This list now only contains approved teachers #}
+        <ul class="item-list">
+          {% for teacher in teachers_list %}
+          <li>
+            <span>{{ teacher.username }} ({{ teacher.email }})</span>
+            <form action="{{ url_for('admin_remove_teacher', user_id=teacher.id) }}" method="POST"
+              style="display: inline; margin-left: 10px;">
+              <button type="submit" class="remove-btn"
+                onclick="return confirm('Are you sure you want to remove this teacher? This will remove an approved teacher.');">Remove</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p>No approved teachers found.</p>
+        {% endif %}
+      </div>
+
+      {# Card 3: Add New Course Entry (Subject/Semester/Department) #}
+      <div class="dashboard-card admin-card">
+        <h3>📚 Add New Course Entry</h3>
+        <p><small>This will add a new row to the <code>CSE_Semester_Subjects_Credits.xlsx</code> file.</small></p>
+        <form action="{{ url_for('admin_add_course_entry') }}" method="POST" class="admin-form">
+          <div class="form-group">
+            <label for="course_semester">Semester:</label>
+            <input type="text" id="course_semester" name="semester" placeholder="e.g., 1st or 5th" required>
+          </div>
+          <div class="form-group">
+            <label for="course_department">Department:</label>
+            <input type="text" id="course_department" name="department" placeholder="e.g., Computer Science" required>
+          </div>
+          <div class="form-group">
+            <label for="course_subject_name">Subject Name:</label>
+            <input type="text" id="course_subject_name" name="subject_name"
+              placeholder="e.g., Introduction to Programming" required>
+          </div>
+          {# You might want to add a 'Credits' field here if your Excel file has it and you want to manage it #}
+          {# <div class="form-group"> #}
+            {# <label for="course_credits">Credits:</label> #}
+            {# <input type="number" id="course_credits" name="credits" placeholder="e.g., 3" required> #}
+            {# </div> #}
+          <button type="submit" class="action-btn">Add Course Entry</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+   
+           <script>
+      // Theme toggle
+      const themeToggleButton = document.getElementById('toggle-theme');
+      const bodyElement = document.body;
+
+      function toggleTheme() {
+        bodyElement.classList.toggle('dark-mode');
+        const isDarkMode = bodyElement.classList.contains('dark-mode');
+        if (isDarkMode) {
+          themeToggleButton.textContent = '☀️ Toggle Light Mode';
+          localStorage.setItem('theme', 'dark');
+        } else {
+          themeToggleButton.textContent = '🌙 Toggle Dark Mode';
+          localStorage.setItem('theme', 'light');
+        }
+      }
+
+      function loadTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+          bodyElement.classList.add('dark-mode');
+          themeToggleButton.textContent = '☀️ Toggle Light Mode';
+        } else {
+          // Default to light mode, ensure no dark-mode class if not explicitly set or set to light
+          bodyElement.classList.remove('dark-mode');
+          themeToggleButton.textContent = '🌙 Toggle Dark Mode';
+        }
+      }
+
+      // This replaces the placeholder: // ... (your existing theme toggle and onload functions) ...
+      // Make sure to integrate it correctly with any existing JavaScript in that script block.
+
+      function openSemester(evt, semesterId) {
+        var i, semesterPanel, tabButton;
+
+        // Get all elements with class="semester-panel" and hide them
+        semesterPanel = document.getElementsByClassName("semester-panel");
+        for (i = 0; i < semesterPanel.length; i++) {
+          semesterPanel[i].style.display = "none";
+          semesterPanel[i].classList.remove("active-panel");
+        }
+
+        // Get all elements with class="tab-button" and remove the class "active"
+        tabButton = document.getElementsByClassName("tab-button");
+        for (i = 0; i < tabButton.length; i++) {
+          tabButton[i].classList.remove("active");
+        }
+
+        // Show the current tab's panel, and add an "active" class to the button that opened the tab
+        const targetPanel = document.getElementById(semesterId);
+        if (targetPanel) {
+          targetPanel.style.display = "block";
+          targetPanel.classList.add("active-panel");
+        }
+        if (evt.currentTarget) {
+          evt.currentTarget.classList.add("active");
+        }
+      }
+
+
+      document.addEventListener('DOMContentLoaded', function () {
+        loadTheme(); // Load saved theme on page load
+
+        if (themeToggleButton) {
+          themeToggleButton.addEventListener('click', toggleTheme);
+        }
+        // ... (your existing DOMContentLoaded for semester panels) ...
+
+        // Event listener for content type select (Upload Content form)
+        const contentTypeSelects = document.querySelectorAll('.dashboard-card .content-type-select'); // More specific selector
+        contentTypeSelects.forEach(select => {
+          const form = select.closest('form');
+          if (form) {
+            const dueDateGroup = form.querySelector('.due-date-group-class'); // Find within its own form
+            if (dueDateGroup) {
+              const updateDueDateVisibility = () => {
+                if (select.value === 'assignment') {
+                  dueDateGroup.style.display = 'block';
+                } else {
+                  dueDateGroup.style.display = 'none';
+                }
+              };
+              updateDueDateVisibility(); // Initial check
+              select.addEventListener('change', updateDueDateVisibility);
+            }
+          }
+        });
+      });
+
+      // Script for adding questions to the Create Test form
+      function addQuestion(buttonElement) {
+        const form = buttonElement.closest('form');
+        if (!form) {
+          console.error("Could not find parent form for 'Add Question' button.");
+          return;
+        }
+
+        const container = form.querySelector(".questions-container");
+        const questionCountInput = form.querySelector(".question-count");
+
+        if (!container || !questionCountInput) {
+          console.error("Could not find '.questions-container' or '.question-count' within the form.");
+          return;
+        }
+
+        let qCount = parseInt(questionCountInput.value) + 1;
+        questionCountInput.value = qCount;
+
+        const qDiv = document.createElement("div");
+        qDiv.classList.add("question-entry");
+        qDiv.setAttribute('id', `question_entry_${qCount}`);
+
+        const semesterValue = form.elements.semester.value; // Get semester value for unique IDs
+
+        qDiv.innerHTML = `
+    <hr>
+    <h4>Question ${qCount}</h4>
+    <div class="form-group">
+      <label for="q${qCount}_type_${semesterValue}">Question Type:</label><br>
+      <select id="q${qCount}_type_${semesterValue}" name="q${qCount}_type" class="form-control question-type-select" onchange="toggleQuestionFields(${qCount}, '${semesterValue}')" required>
+        <option value="mcq" selected>Multiple Choice (MCQ)</option>
+        <option value="fill_blank">Fill in the Blanks</option>
+        <option value="true_false">True/False</option>
+      </select>
+    </div>
+
+    {/* MCQ Fields */}
+    <div id="q${qCount}_fields_mcq_${semesterValue}" class="question-type-fields">
+      <div class="form-group">
+        <label for="q${qCount}_text_mcq_${semesterValue}">Question Text (MCQ):</label><br>
+        <input type="text" id="q${qCount}_text_mcq_${semesterValue}" name="q${qCount}_text_mcq" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="q${qCount}_a_${semesterValue}">Option A:</label><br>
+        <input type="text" id="q${qCount}_a_${semesterValue}" name="q${qCount}_a" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="q${qCount}_b_${semesterValue}">Option B:</label><br>
+        <input type="text" id="q${qCount}_b_${semesterValue}" name="q${qCount}_b" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="q${qCount}_c_${semesterValue}">Option C:</label><br>
+        <input type="text" id="q${qCount}_c_${semesterValue}" name="q${qCount}_c" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="q${qCount}_d_${semesterValue}">Option D:</label><br>
+        <input type="text" id="q${qCount}_d_${semesterValue}" name="q${qCount}_d" class="form-control">
+      </div>
+      <div class="form-group">
+        <label for="q${qCount}_correct_mcq_${semesterValue}">Correct Option (A/B/C/D):</label><br>
+        <input type="text" id="q${qCount}_correct_mcq_${semesterValue}" name="q${qCount}_correct_mcq" class="form-control" maxlength="1" pattern="[A-Da-d]" title="Enter A, B, C, or D">
+      </div>
+    </div>
+
+    {/* Fill in the Blanks Fields */}
+    <div id="q${qCount}_fields_fill_blank_${semesterValue}" class="question-type-fields" style="display: none;">
+      <div class="form-group">
+        <label for="q${qCount}_text_fill_${semesterValue}">Question Text (Fill in the Blanks - use __ for blanks):</label><br>
+        <textarea id="q${qCount}_text_fill_${semesterValue}" name="q${qCount}_text_fill" class="form-control" placeholder="e.g., The capital of France is __."></textarea>
+      </div>
+      <div class="form-group">
+        <label for="q${qCount}_answer_fill_${semesterValue}">Correct Answer(s) (comma-separated if multiple):</label><br>
+        <input type="text" id="q${qCount}_answer_fill_${semesterValue}" name="q${qCount}_answer_fill" class="form-control">
+      </div>
+    </div>
+
+    {/* True/False Fields */}
+    <div id="q${qCount}_fields_true_false_${semesterValue}" class="question-type-fields" style="display: none;">
+      <div class="form-group">
+        <label for="q${qCount}_text_tf_${semesterValue}">Statement (True/False):</label><br>
+        <input type="text" id="q${qCount}_text_tf_${semesterValue}" name="q${qCount}_text_tf" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Correct Answer:</label><br>
+        <label for="q${qCount}_true_${semesterValue}" style="display:inline-block; margin-right:10px;">
+            <input type="radio" id="q${qCount}_true_${semesterValue}" name="q${qCount}_correct_tf" value="True"> True
+        </label>
+        <label for="q${qCount}_false_${semesterValue}" style="display:inline-block;">
+            <input type="radio" id="q${qCount}_false_${semesterValue}" name="q${qCount}_correct_tf" value="False"> False
+        </label>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="q${qCount}_topic_${semesterValue}">Topic:</label><br>
+      <input type="text" id="q${qCount}_topic_${semesterValue}" name="q${qCount}_topic" class="form-control" placeholder="e.g., Linked Lists" required>
+    </div>
+
+    <!-- ADD THIS BLOCK FOR IMAGE UPLOAD -->
+    <div class="form-group">
+      <label for="q${qCount}_image_${semesterValue}">Optional Image for Question ${qCount}:</label><br>
+      <input type="file" id="q${qCount}_image_${semesterValue}" name="q${qCount}_image" class="form-control" accept="image/png, image/jpeg, image/gif">
+      <small class="file-help">Upload PNG, JPG, or GIF if this question needs an image.</small>
+    </div>
+  `;
+        container.appendChild(qDiv);
+        // Initialize visibility and required attributes for the newly added question
+        toggleQuestionFields(qCount, semesterValue);
+      }
+
+      function toggleQuestionFields(qCount, semesterValue) {
+        const typeSelect = document.getElementById(`q${qCount}_type_${semesterValue}`);
+        if (!typeSelect) {
+          console.error(`Type select not found for q${qCount}_type_${semesterValue}`);
+          return;
+        }
+        const selectedType = typeSelect.value;
+
+        const mcqFields = document.getElementById(`q${qCount}_fields_mcq_${semesterValue}`);
+        const fillBlankFields = document.getElementById(`q${qCount}_fields_fill_blank_${semesterValue}`);
+        const trueFalseFields = document.getElementById(`q${qCount}_fields_true_false_${semesterValue}`);
+
+        // Helper to set required attribute and log warnings if element not found
+        const setRequired = (elementId, isRequired) => {
+          const elem = document.getElementById(elementId);
+          if (elem) {
+            elem.required = isRequired;
+          } else {
+            console.warn(`Element not found for required toggle: ${elementId}`);
+          }
+        };
+
+        // Helper to set 'required' for a radio button group
+        const setRadioGroupRequired = (radioName, isRequired) => {
+          const radios = document.getElementsByName(radioName);
+          if (radios && radios.length > 0) {
+            // For a radio group, if 'required' is set on ANY of them, the browser
+            // typically enforces that one from the group must be selected.
+            // It's common practice to set it on the first one.
+            radios[0].required = isRequired;
+            // If not required, remove from all (though browser might only care about the first)
+            if (!isRequired) {
+              for (let k = 0; k < radios.length; k++) {
+                radios[k].required = false;
+              }
+            }
+          } else {
+            console.warn(`Radio group not found: ${radioName}`);
+          }
+        };
+
+        // --- Phase 1: Hide all groups and remove 'required' from their specific inputs ---
+
+        if (mcqFields) {
+          mcqFields.style.display = 'none';
+          setRequired(`q${qCount}_text_mcq_${semesterValue}`, false);
+          setRequired(`q${qCount}_a_${semesterValue}`, false);
+          setRequired(`q${qCount}_b_${semesterValue}`, false);
+          setRequired(`q${qCount}_c_${semesterValue}`, false);
+          setRequired(`q${qCount}_d_${semesterValue}`, false);
+          setRequired(`q${qCount}_correct_mcq_${semesterValue}`, false);
+        }
+
+        if (fillBlankFields) {
+          fillBlankFields.style.display = 'none';
+          setRequired(`q${qCount}_text_fill_${semesterValue}`, false);
+          setRequired(`q${qCount}_answer_fill_${semesterValue}`, false);
+        }
+
+        if (trueFalseFields) {
+          trueFalseFields.style.display = 'none';
+          setRequired(`q${qCount}_text_tf_${semesterValue}`, false);
+          // For radio groups, pass the NAME attribute and false to remove required
+          setRadioGroupRequired(`q${qCount}_correct_tf`, false);
+        }
+
+        // --- Phase 2: Show the selected group and set its necessary fields as 'required' ---
+
+        if (selectedType === 'mcq' && mcqFields) {
+          mcqFields.style.display = 'block';
+          setRequired(`q${qCount}_text_mcq_${semesterValue}`, true);
+          setRequired(`q${qCount}_a_${semesterValue}`, true);
+          setRequired(`q${qCount}_b_${semesterValue}`, true);
+          setRequired(`q${qCount}_c_${semesterValue}`, true);
+          setRequired(`q${qCount}_d_${semesterValue}`, true);
+          setRequired(`q${qCount}_correct_mcq_${semesterValue}`, true);
+        } else if (selectedType === 'fill_blank' && fillBlankFields) {
+          fillBlankFields.style.display = 'block';
+          setRequired(`q${qCount}_text_fill_${semesterValue}`, true);
+          setRequired(`q${qCount}_answer_fill_${semesterValue}`, true);
+        } else if (selectedType === 'true_false' && trueFalseFields) {
+          trueFalseFields.style.display = 'block';
+          setRequired(`q${qCount}_text_tf_${semesterValue}`, true);
+          // For radio groups, pass the NAME attribute and true to set required
+          setRadioGroupRequired(`q${qCount}_correct_tf`, true);
+        }
+
+        // The 'topic' field (q${qCount}_topic_${semesterValue}) is common and its 'required'
+        // attribute is set directly in the HTML, so it doesn't need to be toggled here.
+      }
+    </script>
+
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Check if we need to auto-start eye tracking
+        const shouldInitiateEyeTracking = {{ session.get('initiate_eye_tracking_on_load', false) | tojson
+      }};
+
+      if (shouldInitiateEyeTracking) {
+        console.log("Initiating eye tracking on page load...");
+        fetch("{{ url_for('start_eye_control') }}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+            // Add CSRF token header if your app uses Flask-WTF CSRF protection
+          }
+        })
+          .then(response => response.json())
+          .then(data => {
+            console.log("Start eye control response:", data);
+            alert(data.message); // Or update UI more gracefully
+            if (data.status === 'success') {
+              // Update UI to show it's active, maybe refresh part of the page or the whole page
+              // For simplicity, a reload might be easiest to show the "Stop" button
+              window.location.reload();
+            }
+          })
+          .catch(error => {
+            console.error('Error starting eye tracking:', error);
+            alert('Failed to start eye tracking.');
+          });
+      }
+});
+
+      function stopEyeTracking() {
+        console.log("Attempting to stop eye tracking...");
+        fetch("{{ url_for('stop_eye_control') }}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+            // Add CSRF token header if needed
+          }
+        })
+          .then(response => response.json())
+          .then(data => {
+            console.log("Stop eye control response:", data);
+            alert(data.message);
+            // Reload to update the UI (e.g., remove the stop button, show start button if preference is still on)
+            window.location.reload();
+          })
+          .catch(error => {
+            console.error('Error stopping eye tracking:', error);
+            alert('Failed to stop eye tracking.');
+          });
+      }
+
+      function startEyeTrackingManually() {
+        // This function is for the case where it was enabled at login but isn't active
+        // It's essentially the same as the auto-start logic
+        console.log("Manually initiating eye tracking...");
+        fetch("{{ url_for('start_eye_control') }}", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+          .then(response => response.json())
+          .then(data => {
+            console.log("Manual start eye control response:", data);
+            alert(data.message);
+            if (data.status === 'success') {
+              window.location.reload();
+            }
+          })
+          .catch(error => {
+            console.error('Error manually starting eye tracking:', error);
+            alert('Failed to manually start eye tracking.');
+          });
+      }
+
+
+      document.addEventListener('DOMContentLoaded', function () {
+        // ... any other existing DOMContentLoaded logic ...
+
+        {% if session.get('initiate_web_eye_tracking_on_load') %}
+        console.log("[Dashboard JS] Session flag 'initiate_web_eye_tracking_on_load' is true. Redirecting to web eye tracker page.");
+        window.location.href = "{{ url_for('web_eye_tracker_page') }}";
+        {% endif %}
+
+
+        const hostEyeTrackingStatusP = document.getElementById('eye-tracking-status'); // The <p> tag for host's status
+        // If you had logic for the server-side eye_control_active, it might look like this:
+        const eyeControlStatus = document.getElementById('eyeControlStatus');
+        const toggleEyeControlButton = document.getElementById('toggleEyeControlButton');
+
+        {% if session.get('eye_control_active') %} // This is for the HOST's system script
+        if (eyeControlStatusGeneric) eyeControlStatusGeneric.textContent = 'Host System Eye Control: ACTIVE';
+        if (toggleEyeControlButtonGeneric) toggleEyeControlButtonGeneric.textContent = 'Stop Host System Eye Control';
+        {% else %}
+        if (eyeControlStatusGeneric) eyeControlStatusGeneric.textContent = 'Host System Eye Control: INACTIVE';
+        if (toggleEyeControlButtonGeneric) toggleEyeControlButtonGeneric.textContent = 'Start Host System Eye Control';
+        {% endif %}
+
+        if (toggleEyeControlButtonGeneric) {
+          toggleEyeControlButtonGeneric.addEventListener('click', function () {
+            const isActive = (eyeControlStatusGeneric && eyeControlStatusGeneric.textContent.includes('ACTIVE'));
+            if (isActive) {
+              // These functions should make POST requests
+              stopEyeTracking(); // For host's server-side script
+            } else {
+              startEyeTrackingManually(); // For host's server-side script
+            }
+          });
+        }
+      });
+
+      function stopEyeTracking() {
+        console.log("Attempting to stop host system eye tracking script...");
+        fetch("{{ url_for('stop_eye_control') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+          .then(response => response.json()).then(data => {
+            console.log("Stop host eye control response:", data);
+            if (data.message) alert(data.message);
+            window.location.reload();
+          }).catch(error => console.error('Error stopping host eye tracking:', error));
+      }
+
+      function startEyeTrackingManually() {
+        console.log("Manually initiating host system eye tracking script...");
+        fetch("{{ url_for('start_eye_control') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+          .then(response => response.json()).then(data => {
+            console.log("Manual start host eye control response:", data);
+            if (data.message) alert(data.message);
+            if (data.status === 'success' || data.status === 'info') window.location.reload();
+          }).catch(error => console.error('Error starting host eye tracking:', error));
+      }
+    </script>
+
+</body>
+
+</html>

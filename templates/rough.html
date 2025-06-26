@@ -1,0 +1,535 @@
+<!--dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard | STS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+
+  <!-- Add this near the top of your dashboard -->
+<nav class="main-navigation">
+  <ul>
+    <li><a href="/dashboard" class="active">🏠 Dashboard</a></li>
+    <li><a href="/calendar">📅 Calendar</a></li>
+    <li><a href="/grades">📊 Grades</a></li>
+    <li><a href="/messages">✉️ Messages</a></li>
+    {% if role == 'teacher' %}
+    <li><a href="/analytics">📈 Analytics</a></li>
+    {% endif %}
+  </ul>
+</nav>
+  <div class="dashboard-container">
+    <header class="dashboard-header">
+      <h2>🎓 {{ role.title() }} Dashboard</h2>
+      <div>
+        <button type="button" id="toggle-theme" class="toggle-button">🌙 Toggle Dark Mode</button>
+        <form method="POST" action="/logout" style="display: inline;">
+          <button type="submit" class="logout-button">Logout</button>
+        </form>
+      </div>
+    </header>
+
+    {% if role == 'student' %}
+      <section class="dashboard-section greeting">
+        <p>Welcome back, <strong>{{ username }}</strong>!</p>
+        <blockquote class="daily-quote">"The best way to predict your future is to create it." – Abraham Lincoln</blockquote>
+      </section>
+
+      <section class="dashboard-section profile-card">
+        <h3>👤 Student Profile</h3>
+        <ul>
+          <li><strong>Name:</strong> {{ username }}</li>
+          <li><strong>Roll No:</strong> {{ roll }}</li>
+          <li><strong>Branch:</strong> {{ department }}</li>
+          <li><strong>Semester:</strong> {{ semester }}</li>
+        </ul>
+      </section>
+
+<!-- Updated materials and assignments display -->
+ <div class="content-section">
+  <h3>📚 Study Materials & 📝 Assignments by Subject</h3>
+  {% if subjects %}
+    {% for subject in subjects %}
+    <div class="subject-group">
+      <h4 class="subject-heading">{{ subject.title() }}</h4>
+
+      <div class="subject-content-row" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        
+        <!-- Study Materials Column -->
+        <div class="material-column" style="flex: 1; min-width: 300px;">
+          <h5>📚 Materials</h5>
+          {% if grouped_materials[subject] %}
+            <div class="material-grid">
+              {% for material in grouped_materials[subject] %}
+              <div class="material-card">
+                <div class="material-header">
+                  <h4>{{ material.title }}</h4>
+                </div>
+                <div class="material-meta">
+                  <span>Uploaded by: {{ material.teacher_name }}</span>
+                  <span>Date: {{ material.upload_date.strftime('%Y-%m-%d') }}</span>
+                </div>
+                <div class="material-actions">
+                  <a href="{{ url_for('serve_upload', filename=material.filename) }}" class="download-btn" download>Download</a>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="no-content">No materials uploaded for {{ subject }}.</p>
+          {% endif %}
+        </div>
+
+        <!-- Assignments Column -->
+        <div class="assignment-column" style="flex: 1; min-width: 300px;">
+          <h5>📝 Assignments</h5>
+          {% if grouped_assignments[subject] %}
+            <div class="assignment-grid">
+              {% for assignment in grouped_assignments[subject] %}
+              <div class="assignment-card {% if assignment.due_date and assignment.due_date < datetime.now() %}past-due{% endif %}">
+                <div class="assignment-header">
+                  <h4>{{ assignment.title }}</h4>
+                </div>
+                <div class="assignment-meta">
+                  <span>Due: {{ assignment.due_date.strftime('%Y-%m-%d') if assignment.due_date else 'No due date' }}</span>
+                  <span>Status: Not submitted</span>
+                </div>
+                <div class="assignment-actions">
+                  <a href="{{ url_for('serve_upload', filename=assignment.filename) }}" class="download-btn" download>Download</a>
+                  <button class="submit-btn">Submit Work</button>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="no-content">No assignments uploaded for {{ subject }}.</p>
+          {% endif %}
+        </div>
+
+      </div> <!-- End of subject-content-row -->
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="no-content">You're not enrolled in any subjects. <a href="/complete-profile">Complete your profile</a>.</p>
+  {% endif %}
+</div>
+
+
+
+      <div class="dashboard-grid">
+        <div class="dashboard-card">
+  <h3>📘 My Subjects (Semester {{ semester }})</h3>
+  {% if subjects %}
+    <ul class="subject-list">
+      {% for subject in subjects %}
+        <li>
+          <a href="/subject/{{ subject|replace(' ', '-')|lower }}" class="subject-link">
+            {{ subject }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="no-subjects">No subjects selected yet. <a href="/complete-profile">Complete your profile</a>.</p>
+  {% endif %}
+  <small class="card-note">
+    {% if subjects %}
+      You're enrolled in {{ subjects|length }} subject(s) this semester.
+    {% else %}
+      Select your subjects to get started.
+    {% endif %}
+  </small>
+</div>
+
+
+        <div class="dashboard-card">
+          <h3>🛠️ Labs & Projects</h3>
+          <ul>
+            <li>🔍 Mini Project Review – May 5</li>
+            <li>📤 DE Lab Submission – May 3</li>
+            <li>🧪 OS Practical Internal – May 7</li>
+          </ul>
+          <small class="card-note">Keep your lab journals and code ready!</small>
+        </div>
+
+        <div class="dashboard-card">
+          <h3>📂 Recent Activities</h3>
+          <ul>
+            <li>✅ DS Assignment 3 submitted</li>
+            <li>🎧 OS Lecture attended</li>
+            <li>📓 Lab journal uploaded</li>
+          </ul>
+          <small class="card-note">You’re progressing steadily—keep it up!</small>
+        </div>
+
+        <div class="dashboard-card">
+          <h3 class="card-toggle" onclick="toggleCard(this)">📈 Academic Progress</h3>
+          <div class="card-content">
+            <ul>
+              <li>📊 DSA: <strong>70%</strong> completed</li>
+              <li>🧠 OS: <strong>55%</strong> completed</li>
+              <li>📐 Maths III: <strong>80%</strong> completed</li>
+            </ul>
+            <h4 class="subsection-heading">📚 Previous Semester Marks</h4>
+            <ul>
+              <li>Sem 7 CGPA: <strong>8.4</strong></li>
+              <li>Internet of Things (IoT): 82%</li>
+              <li>Machine Learning: 75%</li>
+              <li>Real Time Systems: 78%</li>
+            </ul>
+            <small class="card-note">Track your syllabus completion and past performance.</small>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <h3>📢 Campus Announcements</h3>
+          <ul>
+            <li>📝 Mid-Sem Exams: May 10–15</li>
+            <li>💻 Hackathon Registration open</li>
+            <li>🎙️ IEEE Seminar: May 4, 1:00 PM</li>
+          </ul>
+          <small class="card-note">Don’t miss important deadlines and events.</small>
+        </div>
+
+        <div class="dashboard-card actions">
+          <h3>🚀 Quick Access</h3>
+          <button class="action-btn">🧠 Join Live Class</button>
+          <button class="action-btn">📤 Upload Assignment</button>
+          <button class="action-btn">🤝 Connect with Mentor</button>
+          <small class="card-note">Jump into tasks and resources easily.</small>
+        </div>
+      </div>
+
+{% elif role == 'teacher' %}
+<section class="dashboard-section greeting dashboard-card">
+  <p>Welcome, <strong>{{ username }}</strong>!</p>
+</section>
+
+<div class="semester-tabs-container dashboard-card">
+  <div class="semester-tabs">
+    {% for sem in semesters_taught %}
+      <button class="tab-button {% if loop.first %}active{% endif %}" onclick="openSemester(event, 'sem{{ sem }}')">
+        Semester {{ sem }}
+      </button>
+    {% endfor %}
+  </div>
+</div>
+
+{% for sem in semesters_taught %}
+<div id="sem{{ sem }}" class="semester-panel {% if loop.first %}active-panel{% endif %}">
+  <div class="subject-grid">
+    {% if subjects_per_semester.get(sem) %}
+      {% for subject in subjects_per_semester[sem] %}
+      <div class="subject-card">
+        <div class="subject-card-header">
+          <h4>{{ subject }}</h4>
+          <span class="subject-code">CS{{ sem }}0{{ loop.index }}</span>
+        </div>
+
+      <div class="subject-card-body">
+        <div class="subject-stats">
+          <div class="stat-item">
+            <span class="stat-number">{{ [24, 28, 32, 30] | random }}</span>
+            <span class="stat-label">Students</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ [3, 5, 7, 4] | random }}</span>
+            <span class="stat-label">Assignments</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ [8, 12, 15, 10] | random }}</span>
+            <span class="stat-label">Resources</span>
+          </div>
+        </div>
+
+        <div class="subject-actions">
+          <a href="/subject/{{ sem }}/{{ subject|replace(' ', '-')|lower }}" class="subject-action-btn">
+            <span class="icon">🏠</span> Class Home
+          </a>
+          <a href="/subject/{{ sem }}/{{ subject|replace(' ', '-')|lower }}/assignments" class="subject-action-btn">
+            <span class="icon">📝</span> Assignments
+          </a>
+          <a href="/subject/{{ sem }}/{{ subject|replace(' ', '-')|lower }}/resources" class="subject-action-btn">
+            <span class="icon">📚</span> Resources
+          </a>
+        </div>
+      </div>
+
+      <div class="subject-card-footer">
+        <span class="last-activity">Last activity: {{ ['2 days ago', '1 week ago', 'yesterday', '5 hours ago'] | random }}</span>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+      <p class="no-subjects">No subjects assigned for Semester {{ sem }}</p>
+    {% endif %}
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="dashboard-card">
+      <h3>📤 Upload Content</h3>
+      <form action="/upload-content" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <label>For Semester:</label>
+          <select name="semester" required>
+            {% for sem in semesters_taught %}
+              <option value="{{ sem }}">Semester {{ sem }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Subject:</label>
+          <select name="subject" required>
+            <option value="" disabled selected>Select a subject</option>
+            {% for sem, subjects in subjects_per_semester.items() %}
+              {% for subject in subjects %}
+                <option value="{{ subject }}">Sem {{ sem }}: {{ subject }}</option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Content Type:</label>
+          <select name="content_type" required>
+            <option value="assignment">Assignment</option>
+            <option value="notes">Lecture Notes</option>
+            <option value="slides">Presentation Slides</option>
+            <option value="video">Video Lecture</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Title:</label>
+          <input type="text" name="title" required>
+        </div>
+
+        <div class="form-group">
+          <label>Description:</label>
+          <textarea name="description"></textarea>
+        </div>
+
+        <div class="form-group" id="due-date-group">
+          <label>Due Date (for assignments):</label>
+          <input type="datetime-local" name="due_date">
+        </div>
+
+        <div class="form-group">
+          <label>File:</label>
+          <input type="file" name="file" required>
+          <small class="file-help">Max 16MB (PDF, DOCX, PPTX, MP4)</small>
+        </div>
+
+        <button type="submit" class="upload-button">📤 Upload Content</button>
+      </form>
+    </div>
+<script>
+// Show/hide due date based on content type
+document.querySelector('select[name="content_type"]').addEventListener('change', function() {
+    const dueDateGroup = document.getElementById('due-date-group');
+    if (this.value === 'assignment') {
+        dueDateGroup.style.display = 'block';
+    } else {
+        dueDateGroup.style.display = 'none';
+    }
+});
+</script>
+
+      
+       <div class="dashboard-card">
+  <h3>🧪 Create a New Test</h3>
+  <form method="POST">
+    <div class="form-group">
+      <label>Semester:</label>
+      <select name="semester" required>
+        {% for sem in semesters_taught %}
+          <option value="{{ sem }}">Semester {{ sem }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Subject:</label>
+      <select name="subject" required>
+        <option value="" disabled selected>Select a subject</option>
+        {% for sem, subjects in subjects_per_semester.items() %}
+          {% for subject in subjects %}
+            <option value="{{ subject }}">Sem {{ sem }}: {{ subject }}</option>
+          {% endfor %}
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Test Title:</label>
+      <input type="text" name="title" required>
+    </div>
+
+    <div class="form-group">
+      <label>Due Date:</label>
+      <input type="datetime-local" name="due_date" required>
+    </div>
+
+    <div class="form-group">
+      <label>Test Type:</label>
+      <select name="test_type" required>
+        <option value="quiz">Quiz</option>
+        <option value="midterm">Midterm</option>
+        <option value="final">Final</option>
+      </select>
+    </div>
+
+    <div id="questions-container"></div>
+    <input type="hidden" name="question_count" id="question_count" value="0">
+    <button type="button" onclick="addQuestion()">➕ Add Question</button>
+    <br><br>
+    <button type="submit" class="test-button">✅ Create Test</button>
+  </form>
+</div>
+
+<script>
+function addQuestion() {
+  const container = document.getElementById('questions-container');
+  let count = parseInt(document.getElementById('question_count').value);
+  count++;
+  document.getElementById('question_count').value = count;
+
+  const block = document.createElement('div');
+  block.className = 'question-block';
+  block.innerHTML = `
+    <h4>Question ${count}</h4>
+    <div class="form-group">
+      <label>Question:</label>
+      <input type="text" name="q${count}_text" required>
+    </div>
+    <div class="form-group">
+      <label>Option A:</label>
+      <input type="text" name="q${count}_a" required>
+    </div>
+    <div class="form-group">
+      <label>Option B:</label>
+      <input type="text" name="q${count}_b" required>
+    </div>
+    <div class="form-group">
+      <label>Option C:</label>
+      <input type="text" name="q${count}_c" required>
+    </div>
+    <div class="form-group">
+      <label>Option D:</label>
+      <input type="text" name="q${count}_d" required>
+    </div>
+    <div class="form-group">
+      <label>Correct Option (A/B/C/D):</label>
+      <input type="text" name="q${count}_correct" maxlength="1" required>
+    </div>
+  `;
+  container.appendChild(block);
+}
+</script>
+    <div class="dashboard-card">
+      <h3>📊 Student Evaluation</h3>
+      <form action="/evaluate" method="GET">
+        <div class="form-group">
+          <label>Select Semester:</label>
+          <select name="semester" required>
+            {% for sem in semesters_taught %}
+              <option value="{{ sem }}">Semester {{ sem }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Select Subject:</label>
+          <select name="subject" required>
+            {% for sem, subjects in subjects_per_semester.items() %}
+              {% for subject in subjects %}
+                <option value="{{ subject }}">Sem {{ sem }}: {{ subject }}</option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="evaluate-button">🔍 View Performance</button>
+      </form>
+      <div class="evaluation-stats">
+        <h4>Quick Stats</h4>
+        <ul>
+          <li>📝 <strong>24</strong> Assignments Graded</li>
+          <li>🎯 <strong>85%</strong> Average Score</li>
+          <li>⚠️ <strong>3</strong> Students Need Help</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+
+    {% elif role == 'admin' %}
+<section class="dashboard-section greeting">
+    <p>Welcome Admin <strong>{{ username }}</strong>. Here's the system overview:</p>
+</section>
+
+{% endif %}
+  </div>
+
+  <script>
+    // Theme toggle
+    document.getElementById('toggle-theme').addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+    });
+
+    // Persist dark mode
+    window.onload = () => {
+      if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark-mode');
+      }
+    };
+
+    // Toggle expand/collapse
+    function toggleCard(header) {
+      const content = header.nextElementSibling;
+      content.classList.toggle('collapsed');
+    }
+  </script>
+
+<script>
+function openSemester(evt, semesterName) {
+    // Hide all semester panels
+    document.querySelectorAll('.semester-panel').forEach(panel => {
+        panel.classList.remove('active-panel');
+    });
+    
+    // Deactivate all tab buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Show the selected panel and activate its button
+    document.getElementById(semesterName).classList.add('active-panel');
+    evt.currentTarget.classList.add('active');
+    
+    // Store the active semester in sessionStorage
+    sessionStorage.setItem('activeSemester', semesterName);
+}
+
+// On page load, check for saved active semester
+document.addEventListener('DOMContentLoaded', () => {
+    const savedSemester = sessionStorage.getItem('activeSemester');
+    if (savedSemester) {
+        const button = document.querySelector(`.tab-button[onclick*="${savedSemester}"]`);
+        if (button) {
+            button.click();
+        }
+    }
+});
+
+</script>
+
+
+</body>
+</html>
+
